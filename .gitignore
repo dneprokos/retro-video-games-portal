@@ -1,0 +1,39 @@
+# Node.js
+node_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dependency directories
+server/node_modules/
+client/node_modules/
+
+# Build output
+server/dist/
+client/dist/
+client/build/
+
+# Environment variables
+.env
+.env.*
+server/.env
+client/.env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+
+# Misc
+coverage/
+
+# Ignore uploads if used for local dev
+server/uploads/ 

@@ -1,0 +1,9 @@
+{
+  "name": "Retro Video Games Portal",
+  "short_name": "RetroGames",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#111111",
+  "description": "A portal for classic retro video games.",
+  "icons": []
+} 
