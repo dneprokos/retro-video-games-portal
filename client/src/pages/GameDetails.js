@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -16,18 +16,14 @@ import {
 
 const GameDetails = () => {
   const { id } = useParams();
-  const { user, isAdmin } = useAuth();
+  const { isAdmin } = useAuth();
   const navigate = useNavigate();
   
   const [game, setGame] = useState(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    fetchGame();
-  }, [id]);
-
-  const fetchGame = async () => {
+  const fetchGame = useCallback(async () => {
     try {
       setLoading(true);
       const response = await axios.get(`/api/games/${id}`);
@@ -39,7 +35,11 @@ const GameDetails = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, navigate]);
+
+  useEffect(() => {
+    fetchGame();
+  }, [fetchGame]);
 
   const handleDelete = async () => {
     if (!window.confirm('Are you sure you want to delete this game? This action cannot be undone.')) {

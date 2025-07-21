@@ -436,7 +436,7 @@ router.delete('/:id', [authenticateToken, requireAdmin], async (req, res) => {
 router.get('/filters/options', async (req, res) => {
   try {
     const genres = Game.getGenres();
-    const platforms = Game.getPlatforms();
+    const platforms = Game.getPlatforms(); // Always return all possible platforms
     
     // Get year range from existing games
     const yearStats = await Game.aggregate([
@@ -456,7 +456,7 @@ router.get('/filters/options', async (req, res) => {
 
     res.json({
       genres,
-      platforms,
+      platforms, // Ensure platforms is always included
       yearRange
     });
   } catch (error) {

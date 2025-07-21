@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Gamepad2, Mail, Lock, Eye, EyeOff, Crown } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Crown } from 'lucide-react';
 
 const Register = () => {
   const [formData, setFormData] = useState({

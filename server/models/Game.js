@@ -138,7 +138,34 @@ gameSchema.statics.getGenres = function() {
 
 // Static method to get available platforms
 gameSchema.statics.getPlatforms = function() {
-  return this.schema.path('platforms').enumValues;
+  return [
+    'NES',
+    'SNES',
+    'N64',
+    'GameCube',
+    'Wii',
+    'Game Boy',
+    'Game Boy Color',
+    'Game Boy Advance',
+    'DS',
+    '3DS',
+    'Sega Genesis',
+    'Sega Saturn',
+    'Sega Dreamcast',
+    'PlayStation',
+    'PlayStation 2',
+    'PlayStation 3',
+    'PSP',
+    'Xbox',
+    'Xbox 360',
+    'PC',
+    'Arcade',
+    'Atari 2600',
+    'Atari 7800',
+    'Commodore 64',
+    'Amiga',
+    'Other'
+  ];
 };
 
 // Pre-save middleware to ensure name uniqueness

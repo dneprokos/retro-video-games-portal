@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { Search, Filter, Gamepad2, Calendar, Users, Star } from 'lucide-react';
+import { Search, Filter, Gamepad2 } from 'lucide-react';
 import GameCard from '../components/GameCard';
 import FilterPanel from '../components/FilterPanel';
 
@@ -25,7 +24,7 @@ const Home = () => {
   });
   const [showFilters, setShowFilters] = useState(false);
 
-  const fetchGames = async (page = 1) => {
+  const fetchGames = useCallback(async (page = 1) => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
@@ -43,11 +42,11 @@ const Home = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
 
   useEffect(() => {
     fetchGames();
-  }, [filters]);
+  }, [fetchGames]);
 
   const handleFilterChange = (newFilters) => {
     setFilters(newFilters);
