@@ -36,12 +36,26 @@ const GameForm = ({ game, onSubmit, onCancel }) => {
     }
   }, [game]);
 
+  useEffect(() => {
+    // Debug log for platforms
+    const platforms = Array.isArray(filterOptions.platforms) ? filterOptions.platforms : [];
+    console.log('DEBUG platforms:', platforms);
+  }, [filterOptions.platforms]);
+
   const fetchFilterOptions = async () => {
     try {
       const response = await axios.get('/api/games/filters/options');
-      setFilterOptions(response.data);
+      setFilterOptions({
+        genres: response.data.genres || [],
+        platforms: response.data.platforms || []
+      });
+      console.log('filterOptions:', {
+        genres: response.data.genres || [],
+        platforms: response.data.platforms || []
+      });
     } catch (error) {
       console.error('Error fetching filter options:', error);
+      setFilterOptions({ genres: [], platforms: [] });
     }
   };
 
@@ -64,6 +78,14 @@ const GameForm = ({ game, onSubmit, onCancel }) => {
       platforms: prev.platforms.includes(platform)
         ? prev.platforms.filter(p => p !== platform)
         : [...prev.platforms, platform]
+    }));
+  };
+
+  // Fix: handle radio button for boolean hasMultiplayer
+  const handleMultiplayerChange = (e) => {
+    setFormData(prev => ({
+      ...prev,
+      hasMultiplayer: e.target.value === 'true'
     }));
   };
 
@@ -134,6 +156,20 @@ const GameForm = ({ game, onSubmit, onCancel }) => {
     }
   };
 
+  // Defensive: ensure platforms and genres are always arrays
+  const platforms = Array.isArray(filterOptions.platforms) ? filterOptions.platforms : [];
+  const genres = Array.isArray(filterOptions.genres) ? filterOptions.genres : [];
+
+  // Only show loading if platforms or genres are undefined (not just empty)
+  if (filterOptions.platforms === undefined || filterOptions.genres === undefined) {
+    return (
+      <div className="flex justify-center items-center min-h-[200px]">
+        <Loader2 className="animate-spin h-8 w-8 text-neon-pink" />
+        <span className="ml-2 text-arcade-text">Loading form options...</span>
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -165,7 +201,7 @@ const GameForm = ({ game, onSubmit, onCancel }) => {
             className={`retro-select w-full ${errors.genre ? 'border-red-400' : ''}`}
           >
             <option value="">Select Genre</option>
-            {filterOptions.genres.map((genre) => (
+            {genres.map((genre) => (
               <option key={genre} value={genre}>
                 {genre}
               </option>
@@ -186,6 +222,8 @@ const GameForm = ({ game, onSubmit, onCancel }) => {
             onChange={handleChange}
             max={new Date().toISOString().split('T')[0]}
             className={`retro-input w-full ${errors.releaseDate ? 'border-red-400' : ''}`}
+            // Allow manual entry
+            autoComplete="off"
           />
           {errors.releaseDate && <p className="text-red-400 text-sm mt-1">{errors.releaseDate}</p>}
         </div>
@@ -196,17 +234,21 @@ const GameForm = ({ game, onSubmit, onCancel }) => {
             Platforms *
           </label>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-            {filterOptions.platforms.map((platform) => (
-              <label key={platform} className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={formData.platforms.includes(platform)}
-                  onChange={() => handlePlatformChange(platform)}
-                  className="rounded border-arcade-border bg-arcade-card text-neon-pink focus:ring-neon-pink"
-                />
-                <span className="text-arcade-text text-sm">{platform}</span>
-              </label>
-            ))}
+            {platforms.length === 0 ? (
+              <span className="text-arcade-text text-sm">No platforms available</span>
+            ) : (
+              platforms.map((platform) => (
+                <label key={platform} className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.platforms.includes(platform)}
+                    onChange={() => handlePlatformChange(platform)}
+                    className="rounded border-arcade-border bg-arcade-card text-neon-pink focus:ring-neon-pink"
+                  />
+                  <span className="text-arcade-text text-sm">{platform}</span>
+                </label>
+              ))
+            )}
           </div>
           {errors.platforms && <p className="text-red-400 text-sm mt-1">{errors.platforms}</p>}
         </div>
@@ -223,7 +265,7 @@ const GameForm = ({ game, onSubmit, onCancel }) => {
                 name="hasMultiplayer"
                 value="true"
                 checked={formData.hasMultiplayer === true}
-                onChange={handleChange}
+                onChange={handleMultiplayerChange}
                 className="border-arcade-border bg-arcade-card text-neon-pink focus:ring-neon-pink"
               />
               <span className="text-arcade-text">Yes</span>
@@ -234,7 +276,7 @@ const GameForm = ({ game, onSubmit, onCancel }) => {
                 name="hasMultiplayer"
                 value="false"
                 checked={formData.hasMultiplayer === false}
-                onChange={handleChange}
+                onChange={handleMultiplayerChange}
                 className="border-arcade-border bg-arcade-card text-neon-pink focus:ring-neon-pink"
               />
               <span className="text-arcade-text">No</span>
