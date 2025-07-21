@@ -92,19 +92,22 @@ app.use('*', (req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-// Database connection
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => {
-    console.log('✅ Connected to MongoDB');
-    app.listen(PORT, () => {
-      console.log(`🎮 Retro Games Portal Server running on port ${PORT}`);
-      console.log(`📧 Owner email: ${process.env.OWNER_EMAIL}`);
-      console.log(`📚 Swagger API Docs: http://localhost:${PORT}/api-docs`);
+// Only start the server if this file is run directly
+if (require.main === module) {
+  // Database connection
+  mongoose.connect(process.env.MONGODB_URI)
+    .then(() => {
+      console.log('✅ Connected to MongoDB');
+      app.listen(PORT, () => {
+        console.log(`🎮 Retro Games Portal Server running on port ${PORT}`);
+        console.log(`📧 Owner email: ${process.env.OWNER_EMAIL}`);
+        console.log(`📚 Swagger API Docs: http://localhost:${PORT}/api-docs`);
+      });
+    })
+    .catch((err) => {
+      console.error('❌ MongoDB connection error:', err);
+      process.exit(1);
     });
-  })
-  .catch((err) => {
-    console.error('❌ MongoDB connection error:', err);
-    process.exit(1);
-  });
+}
 
 module.exports = app; 
