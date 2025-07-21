@@ -23,7 +23,7 @@ const GameForm = ({ game, onSubmit, onCancel }) => {
   useEffect(() => {
     fetchFilterOptions();
     if (game) {
-      setFormData({
+      const newFormData = {
         name: game.name || '',
         genre: game.genre || '',
         platforms: game.platforms || [],
@@ -32,24 +32,17 @@ const GameForm = ({ game, onSubmit, onCancel }) => {
         description: game.description || '',
         imageUrl: game.imageUrl || '',
         rating: game.rating || ''
-      });
+      };
+      setFormData(newFormData);
     }
   }, [game]);
 
-  useEffect(() => {
-    // Debug log for platforms
-    const platforms = Array.isArray(filterOptions.platforms) ? filterOptions.platforms : [];
-    console.log('DEBUG platforms:', platforms);
-  }, [filterOptions.platforms]);
+
 
   const fetchFilterOptions = async () => {
     try {
       const response = await axios.get('/api/games/filters/options');
       setFilterOptions({
-        genres: response.data.genres || [],
-        platforms: response.data.platforms || []
-      });
-      console.log('filterOptions:', {
         genres: response.data.genres || [],
         platforms: response.data.platforms || []
       });

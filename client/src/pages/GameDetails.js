@@ -153,7 +153,7 @@ const GameDetails = () => {
               {isAdmin() && (
                 <div className="flex space-x-2">
                   <Link
-                    to={`/admin/edit/${game._id}`}
+                    to={`/admin?edit=${game._id}`}
                     className="retro-button-secondary flex items-center space-x-1"
                   >
                     <Edit className="h-4 w-4" />
