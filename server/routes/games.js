@@ -108,7 +108,7 @@ router.get('/', [
     }
 
     // Filter by multiplayer
-    if (multiplayer !== undefined) {
+    if (multiplayer !== undefined && multiplayer !== '') {
       filter.hasMultiplayer = multiplayer === 'true';
     }
 
@@ -117,7 +117,7 @@ router.get('/', [
 
     // Execute query
     const games = await Game.find(filter)
-      .sort({ releaseDate: -1 })
+      .sort({ name: 1 }) // Sort alphabetically by name (1 = ascending)
       .skip(skip)
       .limit(parseInt(limit))
       .populate('createdBy', 'email');
@@ -344,8 +344,12 @@ router.put('/:id', [
   body('rating').optional().isFloat({ min: 0, max: 10 }).withMessage('Rating must be between 0 and 10')
 ], async (req, res) => {
   try {
+    console.log('DEBUG: Update request for game ID:', req.params.id);
+    console.log('DEBUG: Request body:', req.body);
+    
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('DEBUG: Validation errors:', errors.array());
       return res.status(400).json({ 
         message: 'Validation error',
         errors: errors.array() 
@@ -354,8 +358,11 @@ router.put('/:id', [
 
     const game = await Game.findById(req.params.id);
     if (!game) {
+      console.log('DEBUG: Game not found with ID:', req.params.id);
       return res.status(404).json({ message: 'Game not found' });
     }
+    
+    console.log('DEBUG: Found game to update:', game.name);
 
     // Check if release date is in the future
     if (req.body.releaseDate && new Date(req.body.releaseDate) > new Date()) {
@@ -363,9 +370,12 @@ router.put('/:id', [
     }
 
     // Update game
+    console.log('DEBUG: Updating game with data:', req.body);
     Object.assign(game, req.body);
     game.updatedBy = req.user._id;
+    console.log('DEBUG: About to save game:', game.name);
     await game.save();
+    console.log('DEBUG: Game saved successfully');
 
     res.json({
       message: 'Game updated successfully',

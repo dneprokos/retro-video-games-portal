@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Plus, Edit, Trash2, Gamepad2, Loader2 } from 'lucide-react';
 import GameForm from '../components/GameForm';
 
 const AdminPanel = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -15,10 +16,44 @@ const AdminPanel = () => {
     fetchGames();
   }, []);
 
+  // Check if we should open edit form from navigation
+  useEffect(() => {
+    const editGameId = searchParams.get('edit');
+    
+    if (editGameId) {
+      // First try to find the game in the loaded games
+      if (games.length > 0) {
+        const gameToEdit = games.find(game => game._id === editGameId);
+        if (gameToEdit) {
+          setEditingGame(gameToEdit);
+          // Clear the URL parameter to prevent re-opening on re-render
+          setSearchParams({});
+          return;
+        }
+      }
+      
+      // If game not found in loaded games, fetch it directly
+      const fetchGameForEdit = async () => {
+        try {
+          const response = await axios.get(`/api/games/${editGameId}`);
+          setEditingGame(response.data.game);
+          // Clear the URL parameter to prevent re-opening on re-render
+          setSearchParams({});
+        } catch (error) {
+          console.error('Error fetching game for editing:', error);
+          toast.error('Failed to load game for editing');
+        }
+      };
+      
+      fetchGameForEdit();
+    }
+  }, [searchParams, games, setSearchParams]);
+
   const fetchGames = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/games?limit=50');
+      // Request all games without pagination for admin panel
+      const response = await axios.get('/api/games?limit=1000&page=1');
       setGames(response.data.games);
     } catch (error) {
       console.error('Error fetching games:', error);
@@ -196,7 +231,10 @@ const AdminPanel = () => {
                     <td className="py-3 px-4">
                       <div className="flex space-x-2">
                         <button
-                          onClick={() => setEditingGame(game)}
+                          onClick={() => {
+                            console.log('DEBUG: Edit button clicked for game:', game);
+                            setEditingGame(game);
+                          }}
                           className="text-neon-blue hover:text-neon-pink transition-colors duration-300"
                           title="Edit"
                         >
