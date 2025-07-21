@@ -62,7 +62,7 @@ router.get('/', [
     return value === 'true' || value === 'false';
   }).withMessage('Multiplayer must be true or false'),
   query('page').optional().isInt({ min: 1 }),
-  query('limit').optional().isInt({ min: 1, max: 50 })
+  query('limit').optional().isInt({ min: 1, max: 1000 })
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
