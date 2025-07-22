@@ -22,7 +22,8 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "msw": "^2.10.4"
   },
   "dependencies": {
     "bcrypt": "^6.0.0"

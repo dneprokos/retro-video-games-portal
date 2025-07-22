@@ -22,6 +22,11 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "test:coverage": "react-scripts test --coverage --watchAll=false",
+    "test:coverage:html": "react-scripts test --coverage --watchAll=false --coverageReporters=html",
+    "test:coverage:watch": "react-scripts test --coverage",
+    "test:verbose": "react-scripts test --verbose",
+    "test:ci": "react-scripts test --coverage --watchAll=false --coverageReporters=text --coverageReporters=lcov",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
