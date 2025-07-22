@@ -8,6 +8,9 @@ const GameCard = ({ game }) => {
   const hasImage = game.imageUrl && !imgError;
 
   const getPlatformsText = (platforms) => {
+    if (!platforms || platforms.length === 0) {
+      return 'No platforms';
+    }
     if (platforms.length <= 2) {
       return platforms.join(', ');
     }
