@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Search, Filter, Gamepad2 } from 'lucide-react';
@@ -23,6 +23,7 @@ const Home = () => {
     hasPrevPage: false
   });
   const [showFilters, setShowFilters] = useState(false);
+  const searchInputRef = useRef(null);
 
   const fetchGames = useCallback(async (page = 1) => {
     try {
@@ -48,6 +49,8 @@ const Home = () => {
     fetchGames();
   }, [fetchGames]);
 
+
+
   const handleFilterChange = (newFilters) => {
     setFilters(newFilters);
     setPagination(prev => ({ ...prev, currentPage: 1 }));
@@ -57,10 +60,30 @@ const Home = () => {
     fetchGames(page);
   };
 
-  const handleSearch = (searchTerm) => {
+  const handleSearch = useCallback((searchTerm) => {
     setFilters(prev => ({ ...prev, search: searchTerm }));
     setPagination(prev => ({ ...prev, currentPage: 1 }));
-  };
+  }, []);
+
+  // Track search input focus state
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  // Maintain focus on search input after re-renders
+  useEffect(() => {
+    if (isSearchFocused && searchInputRef.current) {
+      // Use a small delay to ensure the DOM has updated
+      const timer = setTimeout(() => {
+        if (searchInputRef.current) {
+          searchInputRef.current.focus();
+          // Restore cursor position to end of input
+          const length = searchInputRef.current.value.length;
+          searchInputRef.current.setSelectionRange(length, length);
+        }
+      }, 50);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [games, isSearchFocused]);
 
   if (loading && games.length === 0) {
     return (
@@ -92,10 +115,13 @@ const Home = () => {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-arcade-text" />
             <input
+              ref={searchInputRef}
               type="text"
               placeholder="Search games..."
               value={filters.search}
               onChange={(e) => handleSearch(e.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setIsSearchFocused(false)}
               className="retro-input w-full pl-10"
             />
           </div>

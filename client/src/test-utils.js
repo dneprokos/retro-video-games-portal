@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { act } from 'react';
 import { render } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 
@@ -39,11 +39,11 @@ const AllTheProviders = ({ children }) => {
 const customRender = (ui, options) =>
   render(ui, { wrapper: AllTheProviders, ...options });
 
-// Re-export everything
+// Re-export everything except act (we'll use React's act)
 export * from '@testing-library/react';
 
-// Override render method
-export { customRender as render };
+// Override render method and export React's act
+export { customRender as render, act };
 
 // Test data helpers
 export const mockGame = {
