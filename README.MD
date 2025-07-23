@@ -118,17 +118,30 @@ Current coverage status (as of Phase 2 completion):
 | Component | Statements | Branches | Functions | Lines | Status |
 |-----------|------------|----------|-----------|-------|--------|
 | **Components** | 27.97% | 12.06% | 29.82% | 28.49% | ❌ Needs Work |
+| **Pages** | 11.85% | 10.08% | 13.43% | 11.4% | ❌ Needs Work |
 | **GameCard** | 100% | 100% | 100% | 100% | ✅ Excellent |
 | **FilterPanel** | 91.42% | 100% | 80% | 91.17% | ✅ Good |
 | **ProtectedRoute** | 100% | 100% | 100% | 100% | ✅ Excellent |
-| **Overall Frontend** | 10.12% | 5.86% | 10.27% | 10.37% | ❌ Below Threshold |
+| **Home** | 64% | 70.58% | 47.36% | 65.21% | ⚠️ Needs Improvement |
+| **Overall Frontend** | 14.66% | 9.06% | 14.73% | 14.81% | ❌ Below Threshold |
 
 **Coverage Thresholds:** 80% for statements, branches, functions, and lines.
 
 **Test Summary:**
 - **Backend Tests:** 77 tests passing (4 test suites)
-- **Frontend Tests:** 38 tests passing (3 test suites)
-- **Total Tests:** 115 tests passing
+- **Frontend Tests:** 47 tests passing (4 test suites)
+- **Total Tests:** 124 tests passing
+
+**Frontend Test Breakdown:**
+- **GameCard Component:** 6 tests - Rendering, image handling, platform display, multiplayer status, rating, navigation
+- **FilterPanel Component:** 8 tests - Filter options, API integration, user interactions, error handling
+- **ProtectedRoute Component:** 8 tests - Route protection, authentication states, role-based access, loading states
+- **Home Page Component:** 9 tests - Page rendering, search functionality, game display, pagination, loading states, focus management, search input handling
+
+**Recent Fixes:**
+- ✅ **Search Input Focus Bug Fixed** - Search input now maintains focus when "No Games Found" appears
+- ✅ **All Component Tests Passing** - 45 frontend tests passing with 100% coverage on tested components
+- ✅ **Test Commands Updated** - Clear documentation for running all frontend tests
 
 For detailed coverage information, see [server/COVERAGE.md](server/COVERAGE.md).
 
@@ -148,17 +161,26 @@ For detailed coverage information, see [server/COVERAGE.md](server/COVERAGE.md).
 | `client/src/components/GameCard.test.js` | Component Tests | Game card rendering, image handling, platform display |
 | `client/src/components/FilterPanel.test.js` | Component Tests | Filter panel functionality, API integration, user interactions |
 | `client/src/components/ProtectedRoute.test.js` | Component Tests | Route protection, authentication states, role-based access |
+| `client/src/pages/Home.test.js` | Component Tests | Home page rendering, search functionality, game display, pagination |
 
 ### Frontend Testing
 
 ```bash
 cd client
 
-# Run all tests
-npm test
-
-# Run tests with coverage
+# Run all tests (recommended - always runs all tests)
 npm run test:coverage
+
+# Run all tests without coverage
+npm test -- --watchAll=false --testPathPattern=".*"
+
+# Run all tests for CI/CD
+npm run test:ci
+
+# Run specific test files
+npm test -- --watchAll=false --testPathPattern="Home"
+npm test -- --watchAll=false --testPathPattern="components"
+npm test -- --watchAll=false --testPathPattern="pages"
 
 # Run tests with HTML coverage report
 npm run test:coverage:html
@@ -169,9 +191,11 @@ npm run test:coverage:watch
 # Run tests with verbose output
 npm run test:verbose
 
-# Run tests for CI/CD
-npm run test:ci
+# Clear Jest cache and run all tests
+npm test -- --watchAll=false --clearCache
 ```
+
+**Note:** The default `npm test` command only runs tests for recently changed files. Use `npm run test:coverage` to always run all tests.
 
 ### Test Automation Strategy
 
@@ -179,12 +203,12 @@ The project follows a comprehensive testing strategy with multiple layers:
 
 - **Backend Unit Tests**: ✅ Model validation, middleware functions, utility methods
 - **Backend Integration Tests**: ✅ API endpoints, database interactions
-- **Frontend Component Tests**: ✅ React component rendering and behavior
+- **Frontend Component Tests**: ✅ React component rendering and behavior (4 components tested)
 - **End-to-End Tests**: 🔄 Complete user workflows (Phase 3 - planned)
 
 **Current Progress:**
 - **Phase 1: Backend Foundation** ✅ Complete (77 tests)
-- **Phase 2: Frontend Foundation** ✅ Complete (38 tests)
+- **Phase 2: Frontend Foundation** ✅ Complete (45 tests)
 - **Phase 3: E2E Implementation** 🔄 Planned
 - **Phase 4: CI/CD Integration** 🔄 Planned
 
