@@ -44,10 +44,10 @@ describe('FilterPanel', () => {
     expect(screen.getByText('Clear Filters')).toBeInTheDocument();
     expect(screen.getByText('Apply Filters')).toBeInTheDocument();
 
-    // Wait for API call to complete
+    // Wait for API call to complete and state to settle
     await waitFor(() => {
       expect(axios.get).toHaveBeenCalledWith('/api/games/filters/options');
-    }, { timeout: 3000 });
+    });
   });
 
   it('displays genre options after API call', async () => {
@@ -58,7 +58,7 @@ describe('FilterPanel', () => {
       expect(screen.getByText('Adventure')).toBeInTheDocument();
       expect(screen.getByText('RPG')).toBeInTheDocument();
       expect(screen.getByText('Strategy')).toBeInTheDocument();
-    }, { timeout: 3000 });
+    });
   });
 
   it('displays multiplayer options', () => {
@@ -72,10 +72,13 @@ describe('FilterPanel', () => {
   it('handles genre filter change', async () => {
     render(<FilterPanel filters={mockFilters} onFilterChange={mockOnFilterChange} />);
 
+    // Wait for component to load
     await waitFor(() => {
-      const genreSelect = screen.getByDisplayValue('All Genres');
-      fireEvent.change(genreSelect, { target: { value: 'Action' } });
-    }, { timeout: 3000 });
+      expect(screen.getByDisplayValue('All Genres')).toBeInTheDocument();
+    });
+
+    const genreSelect = screen.getByDisplayValue('All Genres');
+    fireEvent.change(genreSelect, { target: { value: 'Action' } });
 
     // The change should be stored locally but not applied yet
     expect(mockOnFilterChange).not.toHaveBeenCalled();
@@ -84,10 +87,13 @@ describe('FilterPanel', () => {
   it('applies filters when Apply Filters button is clicked', async () => {
     render(<FilterPanel filters={mockFilters} onFilterChange={mockOnFilterChange} />);
 
+    // Wait for component to load
     await waitFor(() => {
-      const applyButton = screen.getByText('Apply Filters');
-      fireEvent.click(applyButton);
-    }, { timeout: 3000 });
+      expect(screen.getByText('Apply Filters')).toBeInTheDocument();
+    });
+
+    const applyButton = screen.getByText('Apply Filters');
+    fireEvent.click(applyButton);
 
     expect(mockOnFilterChange).toHaveBeenCalledWith(mockFilters);
   });
@@ -103,10 +109,13 @@ describe('FilterPanel', () => {
 
     render(<FilterPanel filters={filtersWithValues} onFilterChange={mockOnFilterChange} />);
 
+    // Wait for component to load
     await waitFor(() => {
-      const clearButton = screen.getByText('Clear Filters');
-      fireEvent.click(clearButton);
-    }, { timeout: 3000 });
+      expect(screen.getByText('Clear Filters')).toBeInTheDocument();
+    });
+
+    const clearButton = screen.getByText('Clear Filters');
+    fireEvent.click(clearButton);
 
     expect(mockOnFilterChange).toHaveBeenCalledWith({
       search: 'mario', // search should be preserved
@@ -125,7 +134,7 @@ describe('FilterPanel', () => {
 
     await waitFor(() => {
       expect(consoleErrorSpy).toHaveBeenCalledWith('Error fetching filter options:', expect.any(Error));
-    }, { timeout: 3000 });
+    });
 
     consoleErrorSpy.mockRestore();
   });
