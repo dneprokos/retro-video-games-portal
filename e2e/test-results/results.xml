@@ -1,56 +1,64 @@
-<testsuites id="" name="" tests="17" failures="0" skipped="0" errors="0" time="29.411868000000002">
-<testsuite name="api.spec.js" timestamp="2025-07-28T12:35:05.933Z" hostname="chromium" tests="2" failures="0" skipped="0" time="0.344" errors="0">
-<testcase name="API Health and Integration › should verify API health endpoint" classname="api.spec.js" time="0.155">
+<testsuites id="" name="" tests="20" failures="0" skipped="0" errors="0" time="27.088489000000003">
+<testsuite name="api.spec.js" timestamp="2025-07-28T20:02:37.537Z" hostname="chromium" tests="2" failures="0" skipped="0" time="0.236" errors="0">
+<testcase name="API Health and Integration › should verify API health endpoint" classname="api.spec.js" time="0.111">
 </testcase>
-<testcase name="API Health and Integration › should validate game data structure from API" classname="api.spec.js" time="0.189">
-</testcase>
-</testsuite>
-<testsuite name="edge-cases.spec.js" timestamp="2025-07-28T12:35:05.933Z" hostname="chromium" tests="3" failures="0" skipped="0" time="36.329" errors="0">
-<testcase name="Edge Cases and Error Handling › should handle rapid filter changes" classname="edge-cases.spec.js" time="16.471">
-</testcase>
-<testcase name="Edge Cases and Error Handling › should handle rapid search changes" classname="edge-cases.spec.js" time="9.423">
-</testcase>
-<testcase name="Edge Cases and Error Handling › should handle concurrent filter and search operations" classname="edge-cases.spec.js" time="10.435">
+<testcase name="API Health and Integration › should validate game data structure from API" classname="api.spec.js" time="0.125">
 </testcase>
 </testsuite>
-<testsuite name="filters.spec.js" timestamp="2025-07-28T12:35:05.933Z" hostname="chromium" tests="4" failures="0" skipped="0" time="47.911" errors="0">
-<testcase name="Filter Functionality › should filter by genre and return correct results" classname="filters.spec.js" time="10.435">
+<testsuite name="edge-cases.spec.js" timestamp="2025-07-28T20:02:37.537Z" hostname="chromium" tests="3" failures="0" skipped="0" time="39.736" errors="0">
+<testcase name="Edge Cases and Error Handling › should handle rapid filter changes" classname="edge-cases.spec.js" time="17.309">
 </testcase>
-<testcase name="Filter Functionality › should handle platform filtering (when implemented)" classname="filters.spec.js" time="10.281">
+<testcase name="Edge Cases and Error Handling › should handle rapid search changes" classname="edge-cases.spec.js" time="10.532">
+</testcase>
+<testcase name="Edge Cases and Error Handling › should handle concurrent filter and search operations" classname="edge-cases.spec.js" time="11.895">
+</testcase>
+</testsuite>
+<testsuite name="filters.spec.js" timestamp="2025-07-28T20:02:37.537Z" hostname="chromium" tests="4" failures="0" skipped="0" time="43.619" errors="0">
+<testcase name="Filter Functionality › should filter by genre and return correct results" classname="filters.spec.js" time="11.951">
+</testcase>
+<testcase name="Filter Functionality › should handle platform filtering (when implemented)" classname="filters.spec.js" time="7.469">
 <system-out>
 <![CDATA[Platform filter not yet implemented in the UI
 ]]>
 </system-out>
 </testcase>
-<testcase name="Filter Functionality › should apply multiple filters together" classname="filters.spec.js" time="14.374">
+<testcase name="Filter Functionality › should apply multiple filters together" classname="filters.spec.js" time="11.877">
 <system-out>
 <![CDATA[Platform filter not yet implemented in the UI
 ]]>
 </system-out>
 </testcase>
-<testcase name="Filter Functionality › should clear filters and restore all games" classname="filters.spec.js" time="12.821">
+<testcase name="Filter Functionality › should clear filters and restore all games" classname="filters.spec.js" time="12.322">
 </testcase>
 </testsuite>
-<testsuite name="home-page.spec.js" timestamp="2025-07-28T12:35:05.933Z" hostname="chromium" tests="3" failures="0" skipped="0" time="22.121" errors="0">
-<testcase name="Home Page - Core Functionality › should load home page with games and compare with API" classname="home-page.spec.js" time="6.099">
+<testsuite name="game-card.spec.js" timestamp="2025-07-28T20:02:37.537Z" hostname="chromium" tests="3" failures="0" skipped="0" time="8.922" errors="0">
+<testcase name="Game Card Functionality › should navigate to game details page and verify data" classname="game-card.spec.js" time="4.717">
 </testcase>
-<testcase name="Home Page - Core Functionality › should display all game images correctly" classname="home-page.spec.js" time="10.278">
+<testcase name="Game Card Functionality › should handle invalid game ID gracefully" classname="game-card.spec.js" time="1.657">
 </testcase>
-<testcase name="Home Page - Core Functionality › should display game ratings within valid range" classname="home-page.spec.js" time="5.744">
-</testcase>
-</testsuite>
-<testsuite name="navigation.spec.js" timestamp="2025-07-28T12:35:05.933Z" hostname="chromium" tests="2" failures="0" skipped="0" time="14.257" errors="0">
-<testcase name="Navigation and User Flow › should load home page correctly" classname="navigation.spec.js" time="4.497">
-</testcase>
-<testcase name="Navigation and User Flow › should clear filters and restore all games" classname="navigation.spec.js" time="9.76">
+<testcase name="Game Card Functionality › should navigate back to home page from game details" classname="game-card.spec.js" time="2.548">
 </testcase>
 </testsuite>
-<testsuite name="search.spec.js" timestamp="2025-07-28T12:35:05.933Z" hostname="chromium" tests="3" failures="0" skipped="0" time="14.672" errors="0">
-<testcase name="Search Functionality › should search for games and return correct results" classname="search.spec.js" time="4.493">
+<testsuite name="home-page.spec.js" timestamp="2025-07-28T20:02:37.537Z" hostname="chromium" tests="3" failures="0" skipped="0" time="14.861" errors="0">
+<testcase name="Home Page - Core Functionality › should load home page with games and compare with API" classname="home-page.spec.js" time="3.298">
 </testcase>
-<testcase name="Search Functionality › should handle search with no results" classname="search.spec.js" time="4.426">
+<testcase name="Home Page - Core Functionality › should display all game images correctly" classname="home-page.spec.js" time="8.813">
 </testcase>
-<testcase name="Search Functionality › should handle edge case searches" classname="search.spec.js" time="5.753">
+<testcase name="Home Page - Core Functionality › should display game ratings within valid range" classname="home-page.spec.js" time="2.75">
+</testcase>
+</testsuite>
+<testsuite name="navigation.spec.js" timestamp="2025-07-28T20:02:37.537Z" hostname="chromium" tests="2" failures="0" skipped="0" time="11.699" errors="0">
+<testcase name="Navigation and User Flow › should load home page correctly" classname="navigation.spec.js" time="2.75">
+</testcase>
+<testcase name="Navigation and User Flow › should clear filters and restore all games" classname="navigation.spec.js" time="8.949">
+</testcase>
+</testsuite>
+<testsuite name="search.spec.js" timestamp="2025-07-28T20:02:37.537Z" hostname="chromium" tests="3" failures="0" skipped="0" time="14.839" errors="0">
+<testcase name="Search Functionality › should search for games and return correct results" classname="search.spec.js" time="4.285">
+</testcase>
+<testcase name="Search Functionality › should handle search with no results" classname="search.spec.js" time="4.596">
+</testcase>
+<testcase name="Search Functionality › should handle edge case searches" classname="search.spec.js" time="5.958">
 </testcase>
 </testsuite>
 </testsuites>

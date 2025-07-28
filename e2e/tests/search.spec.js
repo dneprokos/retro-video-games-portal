@@ -18,15 +18,25 @@ test.describe('Search Functionality', () => {
     const initialCount = await homePage.getGameCount();
     expect(initialCount).toBeGreaterThan(0);
     
-    // Perform search for a common game
-    await homePage.searchGames('Mario');
+    // Get a game name from API to use for search (data-independent)
+    const gamesResponse = await apiClient.getGames({ limit: 1 });
+    expect(gamesResponse.status).toBe(200);
+    expect(gamesResponse.data.games).toBeDefined();
+    expect(gamesResponse.data.games.length).toBeGreaterThan(0);
+    
+    const searchGameName = gamesResponse.data.games[0].name;
+    expect(searchGameName).toBeDefined();
+    expect(searchGameName.length).toBeGreaterThan(0);
+    
+    // Perform search using the game name from API
+    await homePage.searchGames(searchGameName);
     
     // Get UI results
     const uiGameCount = await homePage.getGameCount();
     const uiGameNames = await homePage.getGameNames();
     
     // Get API results
-    const apiResponse = await apiClient.searchGames('Mario');
+    const apiResponse = await apiClient.searchGames(searchGameName);
     expect(apiResponse.status).toBe(200);
     
     // Verify search returned results
@@ -66,20 +76,24 @@ test.describe('Search Functionality', () => {
     await homePage.load();
     await homePage.waitForGamesToLoad();
     
-    // Test empty search
+    // Get initial count for comparison
+    const initialCount = await homePage.getGameCount();
+    expect(initialCount).toBeGreaterThan(0);
+    
+    // Test empty search - should return all games
     await homePage.searchGames('');
     const emptySearchCount = await homePage.getGameCount();
-    expect(emptySearchCount).toBeGreaterThan(0);
+    expect(emptySearchCount).toBe(initialCount);
     
-    // Test special characters
+    // Test special characters - should return no results
     await homePage.searchGames('!@#$%^&*()');
     const specialCharCount = await homePage.getGameCount();
-    expect(specialCharCount).toBeGreaterThanOrEqual(0);
+    expect(specialCharCount).toBe(0);
     
-    // Test very long search term
+    // Test very long search term - should return no results
     const longSearchTerm = 'a'.repeat(100);
     await homePage.searchGames(longSearchTerm);
     const longSearchCount = await homePage.getGameCount();
-    expect(longSearchCount).toBeGreaterThanOrEqual(0);
+    expect(longSearchCount).toBe(0);
   });
 }); 
