@@ -32,7 +32,7 @@ services:
     container_name: retro-games-server
     restart: unless-stopped
     environment:
-      NODE_ENV: ${NODE_ENV}
+      NODE_ENV: test
       PORT: ${SERVER_PORT}
       MONGODB_URI: mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongodb:27017/${MONGO_INITDB_DATABASE}?authSource=admin
       JWT_SECRET: ${JWT_SECRET}

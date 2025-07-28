@@ -65,7 +65,7 @@ const Register = () => {
 
         {/* Registration Form */}
         <div className="retro-card">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6" data-testid="register-form">
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-neon-pink font-bold mb-2">
@@ -82,6 +82,7 @@ const Register = () => {
                   onChange={handleChange}
                   className="retro-input w-full pl-10"
                   placeholder="Enter owner email"
+                  data-testid="email-input"
                 />
               </div>
             </div>
@@ -103,6 +104,7 @@ const Register = () => {
                   onChange={handleChange}
                   className="retro-input w-full pl-10 pr-10"
                   placeholder="Enter password (min 6 characters)"
+                  data-testid="password-input"
                 />
                 <button
                   type="button"
@@ -135,6 +137,7 @@ const Register = () => {
                     formData.confirmPassword && !passwordsMatch ? 'border-red-400' : ''
                   }`}
                   placeholder="Confirm your password"
+                  data-testid="confirm-password-input"
                 />
                 <button
                   type="button"
@@ -154,6 +157,7 @@ const Register = () => {
               type="submit"
               disabled={loading || !isFormValid}
               className="retro-button w-full flex justify-center items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              data-testid="register-button"
             >
               {loading ? (
                 <>
