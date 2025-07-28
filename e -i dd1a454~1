@@ -1,0 +1,5 @@
+[33mb9a9249[m[33m ([m[1;36mHEAD -> [m[1;32mphase_3_e2e_tests_and_docker[m[33m)[m Moved appsettings to gitignore
+[33mdd1a454[m e2e tests were added
+[33m587cad0[m[33m ([m[1;31morigin/main[m[33m, [m[1;32mmain[m[33m)[m Merge pull request #9 from dneprokos/fixing_loose_focus_issue
+[33m7f15a08[m[33m ([m[1;31morigin/fixing_loose_focus_issue[m[33m, [m[1;32mfixing_loose_focus_issue[m[33m)[m Fixing warnings
+[33m7d472ff[m Fixed loosing focus issue and added test coverage
