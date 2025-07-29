@@ -23,7 +23,7 @@ const GameCard = ({ game }) => {
 
   return (
     <Link to={`/game/${game._id}`}>
-      <div className="game-card group">
+      <div className="game-card group" data-testid="game-card">
         {/* Game Image or Placeholder */}
         <div className="relative overflow-hidden rounded-lg mb-4 w-full h-48 flex items-center justify-center bg-arcade-card">
           {hasImage ? (
@@ -45,7 +45,7 @@ const GameCard = ({ game }) => {
         {/* Game Info */}
         <div className="space-y-3">
           {/* Title */}
-          <h3 className="text-lg font-bold text-neon-pink group-hover:text-neon-blue transition-colors duration-300">
+          <h3 className="text-lg font-bold text-neon-pink group-hover:text-neon-blue transition-colors duration-300" data-testid="game-name">
             {game.name}
           </h3>
 
@@ -81,7 +81,7 @@ const GameCard = ({ game }) => {
 
           {/* Rating */}
           {game.rating && (
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2" data-testid="game-rating">
               <Star className="h-4 w-4 text-neon-yellow fill-current" />
               <span className="text-arcade-text text-sm">
                 {game.rating}/10

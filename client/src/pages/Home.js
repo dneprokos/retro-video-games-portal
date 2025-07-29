@@ -85,16 +85,16 @@ const Home = () => {
     }
   }, [games, isSearchFocused]);
 
-  if (loading && games.length === 0) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="text-center">
-          <div className="loading-spinner mx-auto mb-4"></div>
-          <p className="text-arcade-text">Loading games...</p>
-        </div>
-      </div>
-    );
-  }
+        if (loading && games.length === 0) {
+        return (
+          <div className="flex justify-center items-center min-h-screen" data-testid="loading-screen">
+            <div className="text-center">
+              <div className="loading-spinner mx-auto mb-4" data-testid="loading-spinner"></div>
+              <p className="text-arcade-text">Loading games...</p>
+            </div>
+          </div>
+        );
+      }
 
   return (
     <div className="space-y-6">
@@ -123,6 +123,7 @@ const Home = () => {
               onFocus={() => setIsSearchFocused(true)}
               onBlur={() => setIsSearchFocused(false)}
               className="retro-input w-full pl-10"
+              data-testid="search-input"
             />
           </div>
 
@@ -130,6 +131,7 @@ const Home = () => {
           <button
             onClick={() => setShowFilters(!showFilters)}
             className="retro-button-secondary flex items-center space-x-2"
+            data-testid="filter-toggle"
           >
             <Filter className="h-4 w-4" />
             <span>Filters</span>
@@ -138,17 +140,19 @@ const Home = () => {
 
         {/* Filter Panel */}
         {showFilters && (
-          <FilterPanel
-            filters={filters}
-            onFilterChange={handleFilterChange}
-          />
+          <div data-testid="filter-panel">
+            <FilterPanel
+              filters={filters}
+              onFilterChange={handleFilterChange}
+            />
+          </div>
         )}
       </div>
 
       {/* Games Grid */}
       {games.length > 0 ? (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" data-testid="games-grid">
             {games.map((game) => (
               <GameCard key={game._id} game={game} />
             ))}
@@ -185,7 +189,7 @@ const Home = () => {
           </div>
         </>
       ) : (
-        <div className="text-center py-12">
+        <div className="text-center py-12" data-testid="no-results">
           <Gamepad2 className="h-16 w-16 text-arcade-border mx-auto mb-4" />
           <h2 className="text-2xl font-arcade text-neon-pink mb-2">No Games Found</h2>
           <p className="text-arcade-text">

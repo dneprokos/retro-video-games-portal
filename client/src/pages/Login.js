@@ -55,7 +55,7 @@ const Login = () => {
 
         {/* Login Form */}
         <div className="retro-card">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6" data-testid="login-form">
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-neon-pink font-bold mb-2">
@@ -72,6 +72,7 @@ const Login = () => {
                   onChange={handleChange}
                   className="retro-input w-full pl-10"
                   placeholder="Enter your email"
+                  data-testid="email-input"
                 />
               </div>
             </div>
@@ -92,6 +93,7 @@ const Login = () => {
                   onChange={handleChange}
                   className="retro-input w-full pl-10 pr-10"
                   placeholder="Enter your password"
+                  data-testid="password-input"
                 />
                 <button
                   type="button"
@@ -108,6 +110,7 @@ const Login = () => {
               type="submit"
               disabled={loading}
               className="retro-button w-full flex justify-center items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              data-testid="login-button"
             >
               {loading ? (
                 <>

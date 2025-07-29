@@ -30,12 +30,12 @@ const GameDetails = () => {
       setGame(response.data.game);
     } catch (error) {
       console.error('Error fetching game:', error);
-      toast.error('Failed to load game details');
-      navigate('/');
+      // Don't navigate away, just set game to null to show error message
+      setGame(null);
     } finally {
       setLoading(false);
     }
-  }, [id, navigate]);
+  }, [id]);
 
   useEffect(() => {
     fetchGame();
@@ -108,7 +108,7 @@ const GameDetails = () => {
 
   if (!game) {
     return (
-      <div className="text-center py-12">
+      <div className="text-center py-12" data-testid="error-message">
         <h2 className="text-2xl font-arcade text-neon-pink mb-2">Game Not Found</h2>
         <p className="text-arcade-text mb-4">The game you're looking for doesn't exist.</p>
         <Link to="/" className="retro-button">Back to Games</Link>
@@ -123,6 +123,7 @@ const GameDetails = () => {
         <Link 
           to="/" 
           className="inline-flex items-center space-x-2 text-arcade-text hover:text-neon-pink transition-colors duration-300"
+          data-testid="back-to-home"
         >
           <ArrowLeft className="h-4 w-4" />
           <span>Back to Games</span>
@@ -138,6 +139,7 @@ const GameDetails = () => {
               src={getImageUrl()}
               alt={game.name}
               className="w-full h-96 object-cover rounded-lg"
+              data-testid="game-image"
               onError={(e) => {
                 e.target.src = 'https://via.placeholder.com/600x400/1a1a1a/ff0080?text=RETRO+GAME';
               }}
@@ -147,7 +149,7 @@ const GameDetails = () => {
           {/* Game Info */}
           <div className="lg:w-1/2 space-y-4">
             <div className="flex justify-between items-start">
-              <h1 className="neon-text text-3xl font-arcade">{game.name}</h1>
+              <h1 className="neon-text text-3xl font-arcade" data-testid="game-name">{game.name}</h1>
               
               {/* Admin Actions */}
               {isAdmin() && (
@@ -177,19 +179,19 @@ const GameDetails = () => {
 
             {/* Basic Info */}
             <div className="space-y-3">
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2" data-testid="game-genre">
                 <Gamepad2 className="h-5 w-5 text-neon-green" />
                 <span className="text-arcade-text font-bold">Genre:</span>
                 <span className="text-arcade-text">{game.genre}</span>
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2" data-testid="game-release-date">
                 <Calendar className="h-5 w-5 text-neon-blue" />
                 <span className="text-arcade-text font-bold">Released:</span>
                 <span className="text-arcade-text">{formatDate(game.releaseDate)}</span>
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2" data-testid="game-multiplayer">
                 <Users className="h-5 w-5 text-neon-purple" />
                 <span className="text-arcade-text font-bold">Multiplayer:</span>
                 <span className="text-arcade-text">
@@ -198,7 +200,7 @@ const GameDetails = () => {
               </div>
 
               {game.rating && (
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2" data-testid="game-rating">
                   <span className="text-arcade-text font-bold">Rating:</span>
                   <div className="flex items-center space-x-1">
                     {renderStars(game.rating)}
@@ -209,7 +211,7 @@ const GameDetails = () => {
             </div>
 
             {/* Platforms */}
-            <div>
+            <div data-testid="game-platforms">
               <h3 className="text-neon-yellow font-bold mb-2">Platforms:</h3>
               <div className="flex flex-wrap gap-2">
                 {game.platforms.map((platform) => (
@@ -230,7 +232,7 @@ const GameDetails = () => {
       {game.description && (
         <div className="retro-card">
           <h2 className="text-xl font-arcade text-neon-pink mb-4">Description</h2>
-          <p className="text-arcade-text leading-relaxed">{game.description}</p>
+          <p className="text-arcade-text leading-relaxed" data-testid="game-description">{game.description}</p>
         </div>
       )}
 

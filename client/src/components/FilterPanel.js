@@ -57,7 +57,7 @@ const FilterPanel = ({ filters, onFilterChange }) => {
   };
 
   return (
-    <div className="mt-6 p-4 border-t border-arcade-border">
+    <div className="mt-6 p-4 border-t border-arcade-border" data-testid="filter-panel-content">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Genre Filter */}
         <div>
@@ -66,6 +66,7 @@ const FilterPanel = ({ filters, onFilterChange }) => {
             value={localFilters.genre}
             onChange={(e) => handleFilterChange('genre', e.target.value)}
             className="retro-select w-full"
+            data-testid="genre-filter"
           >
             <option value="">All Genres</option>
             {filterOptions.genres.map((genre) => (
@@ -130,6 +131,7 @@ const FilterPanel = ({ filters, onFilterChange }) => {
         <button
           onClick={clearFilters}
           className="text-arcade-text hover:text-neon-pink transition-colors duration-300 flex items-center space-x-2"
+          data-testid="clear-filters"
         >
           <X className="h-4 w-4" />
           <span>Clear Filters</span>
@@ -138,6 +140,7 @@ const FilterPanel = ({ filters, onFilterChange }) => {
         <button
           onClick={applyFilters}
           className="retro-button"
+          data-testid="apply-filters"
         >
           Apply Filters
         </button>
