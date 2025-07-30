@@ -63,7 +63,7 @@ const GameDetails = () => {
     if (game?.imageUrl) {
       return game.imageUrl;
     }
-    return 'https://via.placeholder.com/600x400/1a1a1a/ff0080?text=RETRO+GAME';
+    return '/images/default-game.svg';
   };
 
   const formatDate = (dateString) => {
@@ -141,7 +141,7 @@ const GameDetails = () => {
               className="w-full h-96 object-cover rounded-lg"
               data-testid="game-image"
               onError={(e) => {
-                e.target.src = 'https://via.placeholder.com/600x400/1a1a1a/ff0080?text=RETRO+GAME';
+                e.target.src = '/images/default-game.svg';
               }}
             />
           </div>

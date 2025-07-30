@@ -93,8 +93,9 @@ const gameSchema = new mongoose.Schema({
     validate: {
       validator: function(url) {
         if (!url) return true; // Optional field
-        const urlPattern = /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)$/i;
-        return urlPattern.test(url);
+        // More flexible pattern that handles Wikimedia URLs and other image URLs
+        const urlPattern = /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i;
+        return urlPattern.test(url) || url.includes('wikimedia.org') || url.includes('wikipedia.org');
       },
       message: 'Please enter a valid image URL'
     }
@@ -108,7 +109,7 @@ const gameSchema = new mongoose.Schema({
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: false
   },
   updatedBy: {
     type: mongoose.Schema.Types.ObjectId,
@@ -128,7 +129,7 @@ gameSchema.virtual('releaseYear').get(function() {
 
 // Method to get default image URL
 gameSchema.methods.getImageUrl = function() {
-  return this.imageUrl || '/images/default-game.png';
+  return this.imageUrl || '/images/default-game.svg';
 };
 
 // Static method to get available genres

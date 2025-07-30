@@ -1,0 +1,24 @@
+<svg width="400" height="300" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="300" fill="#1a1a1a"/>
+  <rect x="10" y="10" width="380" height="280" fill="#2a2a2a" stroke="#ff0080" stroke-width="2" rx="8"/>
+  
+  <!-- Game Controller Icon -->
+  <g transform="translate(150, 100)">
+    <!-- Controller Body -->
+    <rect x="0" y="0" width="100" height="60" fill="#333" rx="8" stroke="#ff0080" stroke-width="2"/>
+    
+    <!-- D-pad -->
+    <rect x="15" y="20" width="20" height="20" fill="#555" rx="2"/>
+    <rect x="20" y="15" width="10" height="30" fill="#555" rx="2"/>
+    
+    <!-- Buttons -->
+    <circle cx="75" cy="25" r="8" fill="#ff0080"/>
+    <circle cx="85" cy="35" r="8" fill="#ff0080"/>
+    <circle cx="75" cy="45" r="8" fill="#ff0080"/>
+    <circle cx="65" cy="35" r="8" fill="#ff0080"/>
+  </g>
+  
+  <!-- Text -->
+  <text x="200" y="220" text-anchor="middle" fill="#ff0080" font-family="Arial, sans-serif" font-size="16" font-weight="bold">RETRO GAME</text>
+  <text x="200" y="240" text-anchor="middle" fill="#888" font-family="Arial, sans-serif" font-size="12">No Image Available</text>
+</svg> 
