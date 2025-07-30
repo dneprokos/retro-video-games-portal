@@ -236,7 +236,12 @@ router.post('/', [
   body('releaseDate').isISO8601().withMessage('Invalid release date'),
   body('hasMultiplayer').isBoolean().withMessage('Multiplayer must be true or false'),
   body('description').optional().isLength({ max: 500 }).withMessage('Description cannot exceed 500 characters'),
-  body('imageUrl').optional().isURL().withMessage('Invalid image URL'),
+  body('imageUrl').optional().custom((value) => {
+    if (!value || value.trim() === '') return true; // Allow empty or whitespace-only values
+    // Check if it's a valid URL or contains wikimedia/wikipedia
+    const urlPattern = /^https?:\/\/.+/i;
+    return urlPattern.test(value) || value.includes('wikimedia.org') || value.includes('wikipedia.org');
+  }).withMessage('Invalid image URL'),
   body('rating').optional().isFloat({ min: 0, max: 10 }).withMessage('Rating must be between 0 and 10')
 ], async (req, res) => {
   try {
@@ -340,7 +345,12 @@ router.put('/:id', [
   body('releaseDate').optional().isISO8601().withMessage('Invalid release date'),
   body('hasMultiplayer').optional().isBoolean().withMessage('Multiplayer must be true or false'),
   body('description').optional().isLength({ max: 500 }).withMessage('Description cannot exceed 500 characters'),
-  body('imageUrl').optional().isURL().withMessage('Invalid image URL'),
+  body('imageUrl').optional().custom((value) => {
+    if (!value || value.trim() === '') return true; // Allow empty or whitespace-only values
+    // Check if it's a valid URL or contains wikimedia/wikipedia
+    const urlPattern = /^https?:\/\/.+/i;
+    return urlPattern.test(value) || value.includes('wikimedia.org') || value.includes('wikipedia.org');
+  }).withMessage('Invalid image URL'),
   body('rating').optional().isFloat({ min: 0, max: 10 }).withMessage('Rating must be between 0 and 10')
 ], async (req, res) => {
   try {
