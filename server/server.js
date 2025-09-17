@@ -55,7 +55,10 @@ const swaggerOptions = {
       description: 'API documentation for the Retro Video Games Portal',
     },
     servers: [
-      { url: `http://localhost:${PORT}/api` }
+      { url: process.env.NODE_ENV === 'production' 
+          ? `https://${process.env.WEBSITE_SITE_NAME || 'your-app'}.azurewebsites.net/api`
+          : `http://localhost:${PORT}/api` 
+      }
     ],
     components: {
       securitySchemes: {
@@ -96,20 +99,34 @@ app.use('*', (req, res) => {
 
 // Only start the server if this file is run directly
 if (require.main === module) {
-  // Database connection
-  mongoose.connect(process.env.MONGODB_URI)
-    .then(() => {
-      console.log('✅ Connected to MongoDB');
-      app.listen(PORT, () => {
-        console.log(`🎮 Retro Games Portal Server running on port ${PORT}`);
-        console.log(`📧 Owner email: ${process.env.OWNER_EMAIL}`);
-        console.log(`📚 Swagger API Docs: http://localhost:${PORT}/api-docs`);
+  // Configure mongoose for better Azure compatibility
+  mongoose.set('bufferCommands', false); // Disable mongoose buffering
+  mongoose.set('bufferMaxEntries', 0); // Disable mongoose buffering
+
+  // Start the server first, then try to connect to database
+  app.listen(PORT, () => {
+    console.log(`🎮 Retro Games Portal Server running on port ${PORT}`);
+    console.log(`📧 Owner email: ${process.env.OWNER_EMAIL}`);
+    console.log(`📚 Swagger API Docs: https://${process.env.WEBSITE_SITE_NAME || 'your-app'}.azurewebsites.net/api-docs`);
+    
+    // Try to connect to MongoDB (non-blocking)
+    if (process.env.MONGODB_URI) {
+      mongoose.connect(process.env.MONGODB_URI, {
+        serverSelectionTimeoutMS: 5000,
+        bufferCommands: false,
+        bufferMaxEntries: 0
+      })
+      .then(() => {
+        console.log('✅ Connected to MongoDB');
+      })
+      .catch((err) => {
+        console.error('❌ MongoDB connection error:', err.message);
+        console.log('⚠️  App running without database connection');
       });
-    })
-    .catch((err) => {
-      console.error('❌ MongoDB connection error:', err);
-      process.exit(1);
-    });
+    } else {
+      console.log('⚠️  No MONGODB_URI provided, running without database');
+    }
+  });
 }
 
 module.exports = app; 
