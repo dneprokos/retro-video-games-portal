@@ -50,9 +50,9 @@ echo "   🗄️ MongoDB: localhost:27017"
 
 echo ""
 echo "📋 Useful commands:"
-echo "   View logs: docker-compose logs -f"
-echo "   Stop services: docker-compose down"
-echo "   Restart services: docker-compose restart"
+echo "   View logs: docker-compose -f docker/docker-compose.yml logs -f"
+echo "   Stop services: docker-compose -f docker/docker-compose.yml  down"
+echo "   Restart services: docker-compose -f docker/docker-compose.yml  restart"
 
 echo ""
 echo "🎉 Retro Video Games Portal is starting up!"

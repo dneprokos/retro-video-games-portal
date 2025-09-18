@@ -55,9 +55,9 @@ const swaggerOptions = {
       description: 'API documentation for the Retro Video Games Portal',
     },
     servers: [
-      { url: process.env.NODE_ENV === 'production' 
+      { url: process.env.NODE_ENV === 'production'
           ? `https://${process.env.WEBSITE_SITE_NAME || 'your-app'}.azurewebsites.net/api`
-          : `http://localhost:${PORT}/api` 
+          : `http://localhost:${PORT}/api`
       }
     ],
     components: {
@@ -86,7 +86,7 @@ app.get('/api/health', (req, res) => {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ 
+  res.status(500).json({
     message: 'Something went wrong!',
     error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
   });
@@ -101,20 +101,18 @@ app.use('*', (req, res) => {
 if (require.main === module) {
   // Configure mongoose for better Azure compatibility
   mongoose.set('bufferCommands', false); // Disable mongoose buffering
-  mongoose.set('bufferMaxEntries', 0); // Disable mongoose buffering
 
   // Start the server first, then try to connect to database
   app.listen(PORT, () => {
     console.log(`🎮 Retro Games Portal Server running on port ${PORT}`);
     console.log(`📧 Owner email: ${process.env.OWNER_EMAIL}`);
     console.log(`📚 Swagger API Docs: https://${process.env.WEBSITE_SITE_NAME || 'your-app'}.azurewebsites.net/api-docs`);
-    
+
     // Try to connect to MongoDB (non-blocking)
     if (process.env.MONGODB_URI) {
       mongoose.connect(process.env.MONGODB_URI, {
         serverSelectionTimeoutMS: 5000,
         bufferCommands: false,
-        bufferMaxEntries: 0
       })
       .then(() => {
         console.log('✅ Connected to MongoDB');
@@ -129,4 +127,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = app; 
+module.exports = app;

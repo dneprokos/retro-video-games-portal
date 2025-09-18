@@ -52,9 +52,9 @@ Write-Host "   MongoDB: localhost:27017" -ForegroundColor White
 
 Write-Host ""
 Write-Host "Useful commands:" -ForegroundColor Cyan
-Write-Host "   View logs: docker-compose logs -f" -ForegroundColor White
-Write-Host "   Stop services: docker-compose down" -ForegroundColor White
-Write-Host "   Restart services: docker-compose restart" -ForegroundColor White
+Write-Host "   View logs: docker-compose -f docker/docker-compose.yml logs -f" -ForegroundColor White
+Write-Host "   Stop services: docker-compose -f docker/docker-compose.yml down" -ForegroundColor White
+Write-Host "   Restart services: docker-compose -f docker/docker-compose.yml restart" -ForegroundColor White
 
 Write-Host ""
 Write-Host "Retro Video Games Portal is starting up!" -ForegroundColor Green
