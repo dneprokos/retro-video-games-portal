@@ -105,7 +105,7 @@ app.use('*', (req, res) => {
 
 // Only start the server if this file is run directly
 if (require.main === module) {
-  // Configure mongoose for better Azure compatibility
+  // Configure mongoose for better Azure/GCR compatibility
   mongoose.set('bufferCommands', false); // Disable mongoose buffering
 
   // Start the server first, then try to connect to database
@@ -125,6 +125,7 @@ if (require.main === module) {
       })
       .catch((err) => {
         console.error('❌ MongoDB connection error:', err.message);
+        console.error('❌ MongoDB connection error (cause):', err.cause);
         console.log('⚠️  App running without database connection');
       });
     } else {
