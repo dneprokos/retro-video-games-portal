@@ -5,9 +5,9 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
-const authRoutes = require('./routes/auth');
-const gameRoutes = require('./routes/games');
-const adminRoutes = require('./routes/admin');
+const authRoutes = require('./routes/auth.js');
+const gameRoutes = require('./routes/games.js');
+const adminRoutes = require('./routes/admin.js');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 

@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const User = require('./models/User');
 const Game = require('./models/Game');
 require('dotenv').config({ path: __dirname + '/.env' });
 
@@ -212,29 +211,19 @@ const seedDatabase = async () => {
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('✅ Connected to MongoDB');
 
-    // Clear existing games
-    await Game.deleteMany({});
-    console.log('🗑️  Cleared existing games');
+    // Clear existing users only
+    const User = require('./models/User');
+    await User.deleteMany({});
+    console.log('🗑️  Cleared existing users');
 
-    // Create owner user if it doesn't exist
-    const ownerEmail = process.env.OWNER_EMAIL || 'dneprokos@gmail.com';
-    let owner = await User.findOne({ email: ownerEmail });
-    
-    if (!owner) {
-      owner = await User.createOwner(ownerEmail, 'owner123');
-      console.log('👑 Created owner account:', ownerEmail);
+    // Insert games (only if no games exist)
+    const existingGames = await Game.countDocuments();
+    if (existingGames === 0) {
+      await Game.insertMany(retroGames);
+      console.log(`🎮 Added ${retroGames.length} retro games to the database`);
     } else {
-      console.log('👑 Owner account already exists:', ownerEmail);
+      console.log(`🎮 Games already exist (${existingGames} games), skipping insertion`);
     }
-
-    // Insert games
-    const gamesWithOwner = retroGames.map(game => ({
-      ...game,
-      createdBy: owner._id
-    }));
-
-    await Game.insertMany(gamesWithOwner);
-    console.log(`🎮 Added ${retroGames.length} retro games to the database`);
 
     // Display some statistics
     const totalGames = await Game.countDocuments();

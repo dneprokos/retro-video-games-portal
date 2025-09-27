@@ -76,6 +76,10 @@ db.createCollection('games', {
   }
 });
 
+// Clear any existing users (keep games intact)
+db.users.deleteMany({});
+print("Cleared existing users");
+
 // Create indexes for better performance
 db.users.createIndex({ email: 1 }, { unique: true });
 db.games.createIndex({ name: 1 }, { unique: true });
@@ -83,20 +87,6 @@ db.games.createIndex({ genre: 1 });
 db.games.createIndex({ platforms: 1 });
 db.games.createIndex({ releaseDate: 1 });
 db.games.createIndex({ hasMultiplayer: 1 });
-
-// Create default owner user
-const ownerUser = {
-  email: "dneprokos@gmail.com",
-  password: "$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/HS.iK8O", // "password123"
-  role: "owner",
-  createdAt: new Date(),
-  lastLogin: new Date()
-};
-
-const insertedUser = db.users.insertOne(ownerUser);
-const ownerId = insertedUser.insertedId;
-
-print("Created default owner user with ID: " + ownerId);
 
 // Insert sample games data
 db.games.insertMany([
@@ -109,7 +99,7 @@ db.games.insertMany([
     description: "The classic platformer that started it all. Guide Mario through the Mushroom Kingdom to rescue Princess Peach from Bowser.",
     imageUrl: "https://upload.wikimedia.org/wikipedia/en/0/03/Super_Mario_Bros._box_art.jpg",
     rating: 9.5,
-    createdBy: ownerId
+    createdBy: null
   },
   {
     name: "The Legend of Zelda",
@@ -120,7 +110,7 @@ db.games.insertMany([
     description: "An epic adventure in the land of Hyrule. Link must rescue Princess Zelda and defeat Ganon to restore peace.",
     imageUrl: "https://upload.wikimedia.org/wikipedia/en/4/41/Legend_of_zelda_cover_%28with_cartridge%29_gold.png",
     rating: 9.8,
-    createdBy: ownerId
+    createdBy: null
   },
   {
     name: "Pac-Man",
@@ -131,7 +121,7 @@ db.games.insertMany([
     description: "The iconic maze chase game. Guide Pac-Man through the maze while avoiding ghosts and eating dots.",
     imageUrl: "https://upload.wikimedia.org/wikipedia/en/5/59/Pac-man.png",
     rating: 9.0,
-    createdBy: ownerId
+    createdBy: null
   },
   {
     name: "Donkey Kong",
@@ -142,7 +132,7 @@ db.games.insertMany([
     description: "The game that introduced Mario (then Jumpman) to the world. Climb ladders and avoid barrels to rescue Pauline.",
     imageUrl: "https://upload.wikimedia.org/wikipedia/en/1/1f/Donkey_Kong_arcade.png",
     rating: 8.8,
-    createdBy: ownerId
+    createdBy: null
   },
   {
     name: "Space Invaders",
@@ -153,7 +143,7 @@ db.games.insertMany([
     description: "The classic space shooter that defined the genre. Defend Earth from waves of alien invaders.",
     imageUrl: "https://upload.wikimedia.org/wikipedia/en/2/20/SpaceInvaders-Gameplay.jpg",
     rating: 8.5,
-    createdBy: ownerId
+    createdBy: null
   },
   {
     name: "Tetris",
@@ -164,7 +154,7 @@ db.games.insertMany([
     description: "The addictive puzzle game where you arrange falling blocks to create complete lines.",
     imageUrl: "https://upload.wikimedia.org/wikipedia/en/5/5c/Tetris_NES_cover_art.jpg",
     rating: 9.2,
-    createdBy: ownerId
+    createdBy: null
   },
   {
     name: "Street Fighter II",
@@ -175,7 +165,7 @@ db.games.insertMany([
     description: "The revolutionary fighting game that popularized the genre. Choose from 8 unique characters and battle it out.",
     imageUrl: "https://upload.wikimedia.org/wikipedia/en/1/1f/Street_Fighter_II_arcade.png",
     rating: 9.3,
-    createdBy: ownerId
+    createdBy: null
   },
   {
     name: "Sonic the Hedgehog",
@@ -186,7 +176,7 @@ db.games.insertMany([
     description: "Sega's answer to Mario. Run at high speeds as Sonic through colorful zones while collecting rings.",
     imageUrl: "https://upload.wikimedia.org/wikipedia/en/b/ba/Sonic_the_Hedgehog_1_Genesis_box_art.jpg",
     rating: 8.9,
-    createdBy: ownerId
+    createdBy: null
   },
   {
     name: "Mega Man 2",
@@ -197,7 +187,7 @@ db.games.insertMany([
     description: "The blue bomber's most beloved adventure. Defeat 8 robot masters and take their powers.",
     imageUrl: "https://upload.wikimedia.org/wikipedia/en/5/53/Mega_Man_2_cover.jpg",
     rating: 9.1,
-    createdBy: ownerId
+    createdBy: null
   },
   {
     name: "Castlevania",
@@ -208,7 +198,7 @@ db.games.insertMany([
     description: "Venture into Dracula's castle as Simon Belmont armed with the legendary Vampire Killer whip.",
     imageUrl: "https://upload.wikimedia.org/wikipedia/en/8/8a/Castlevania_cover_art.jpg",
     rating: 8.7,
-    createdBy: ownerId
+    createdBy: null
   },
   {
     name: "Contra",
@@ -219,7 +209,7 @@ db.games.insertMany([
     description: "Run and gun action at its finest. Battle alien forces with a friend in this cooperative shooter.",
     imageUrl: "https://upload.wikimedia.org/wikipedia/en/8/8a/Contra_cover_art.jpg",
     rating: 8.6,
-    createdBy: ownerId
+    createdBy: null
   },
   {
     name: "Final Fantasy",
@@ -230,7 +220,7 @@ db.games.insertMany([
     description: "The beginning of the legendary RPG series. Four warriors of light must restore the crystals and save the world.",
     imageUrl: "https://upload.wikimedia.org/wikipedia/en/7/7d/Final_Fantasy_1_JP_Box.jpg",
     rating: 8.4,
-    createdBy: ownerId
+    createdBy: null
   }
 ]);
 
