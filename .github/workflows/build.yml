@@ -180,10 +180,6 @@ jobs:
         working-directory: ./client
         run: npm ci
 
-      - name: Build frontend
-        working-directory: ./client
-        run: npm run build
-
       - name: Start backend server
         working-directory: ./server
         env:
@@ -209,16 +205,12 @@ jobs:
           timeout 30 npm run seed
           echo "Database seeded successfully!"
 
-      - name: Install serve package
-        working-directory: ./client
-        run: npm install -g serve
-
-      - name: Start frontend server
+      - name: Start frontend development server
         working-directory: ./client
         run: |
-          serve -s build -l 3000 &
-          sleep 5
-          echo "Frontend server started on port 3000"
+          npm start &
+          sleep 20
+          echo "Frontend development server started on port 3000"
 
       - name: Install E2E dependencies
         working-directory: ./e2e
