@@ -1,0 +1,111 @@
+---
+description: End-to-end testing rules for complete user workflows
+globs: ["e2e/**/*.spec.js", "**/*.e2e.test.js"]
+alwaysApply: true
+---
+
+# E2E Testing Rules
+
+## Test Scope
+- Test complete user workflows from start to finish
+- Test cross-browser compatibility
+- Test responsive design and mobile interactions
+- Test performance under real conditions
+- Test accessibility features
+- Test error handling and recovery
+
+## User Workflow Testing
+- Test user registration and login flows
+- Test game browsing and search functionality
+- Test admin panel operations
+- Test form submissions and validations
+- Test navigation and routing
+- Test user preferences and settings
+
+## Page Object Model
+- Create page objects for each major page
+- Encapsulate page interactions in methods
+- Use meaningful method names
+- Implement proper element selectors
+- Handle dynamic content and loading states
+- Maintain page object hierarchy
+
+## Test Data Management
+- Use realistic test data
+- Implement proper test data cleanup
+- Use database seeding for consistent data
+- Create test user accounts
+- Use meaningful test scenarios
+- Avoid test data conflicts
+
+## Browser Testing
+- Test on multiple browsers (Chrome, Firefox, Safari)
+- Test on different screen sizes
+- Test mobile and desktop interactions
+- Test touch and keyboard interactions
+- Test browser-specific features
+- Test cross-browser compatibility
+
+## Performance Testing
+- Test page load times
+- Test API response times
+- Test database query performance
+- Test memory usage and leaks
+- Test concurrent user scenarios
+- Test stress and load conditions
+
+## Accessibility Testing
+- Test keyboard navigation
+- Test screen reader compatibility
+- Test color contrast and visual indicators
+- Test focus management
+- Test ARIA attributes and roles
+- Test form accessibility
+
+## Error Handling Testing
+- Test network error scenarios
+- Test server error responses
+- Test client-side error handling
+- Test error recovery and fallbacks
+- Test timeout scenarios
+- Test malformed data handling
+
+## Security Testing
+- Test authentication flows
+- Test authorization boundaries
+- Test input validation
+- Test XSS and CSRF protection
+- Test session management
+- Test secure data handling
+
+## Test Environment
+- Use production-like environment
+- Configure proper test database
+- Use realistic test data
+- Implement proper cleanup
+- Use consistent test environment
+- Monitor test execution time
+
+## Test Organization
+- Group tests by user workflows
+- Use descriptive test names
+- Include test context and scenarios
+- Separate positive and negative tests
+- Use proper test file structure
+- Implement test data factories
+
+## Coverage Requirements
+- Test all critical user paths
+- Test all admin functionalities
+- Test all error scenarios
+- Test all accessibility features
+- Test all responsive breakpoints
+- Ensure comprehensive coverage
+
+## Best Practices
+- Use realistic test scenarios
+- Test user behavior, not implementation
+- Keep tests independent and isolated
+- Use proper test data management
+- Focus on user experience
+- Test error scenarios thoroughly

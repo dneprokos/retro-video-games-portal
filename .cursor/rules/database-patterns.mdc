@@ -1,0 +1,87 @@
+---
+description: Database design and Mongoose schema patterns
+globs: ["server/models/**/*.js", "server/seed.js"]
+alwaysApply: true
+---
+
+# Database Patterns Rules
+
+## Schema Design
+- Use comprehensive validation rules
+- Include required fields with proper validation
+- Use enums for constrained values
+- Implement custom validators
+- Add proper indexes for performance
+- Use timestamps for tracking
+
+## Validation Patterns
+- Use descriptive error messages
+- Implement proper field validation
+- Use custom validators for complex rules
+- Test validation rules thoroughly
+- Include proper error handling
+- Use proper validation middleware
+
+## Indexing Strategy
+- Create indexes for frequently queried fields
+- Use compound indexes for complex queries
+- Implement text indexes for search
+- Monitor index performance
+- Use proper index naming
+- Test index effectiveness
+
+## Data Relationships
+- Use proper references between collections
+- Implement proper population
+- Use virtual fields for computed values
+- Handle relationship updates
+- Implement proper cascading
+- Test relationship integrity
+
+## Performance Optimization
+- Use proper connection pooling
+- Implement query optimization
+- Use proper pagination
+- Implement caching strategies
+- Monitor database performance
+- Use proper indexing
+
+## Data Migration
+- Implement proper migration scripts
+- Handle data transformation
+- Test migration processes
+- Implement rollback procedures
+- Use proper versioning
+- Document migration changes
+
+## Error Handling
+- Handle validation errors properly
+- Implement proper error logging
+- Use consistent error responses
+- Handle database connection errors
+- Implement proper retry logic
+- Test error scenarios
+
+## Security
+- Sanitize input data
+- Use proper authentication
+- Implement proper authorization
+- Handle sensitive data properly
+- Use proper encryption
+- Test security measures
+
+## Testing
+- Test schema validation
+- Test data relationships
+- Test performance queries
+- Test error scenarios
+- Use proper test data
+- Implement proper cleanup
+
+## Best Practices
+- Use meaningful field names
+- Implement proper validation
+- Use proper indexing
+- Handle errors gracefully
+- Test all scenarios
+- Monitor performance

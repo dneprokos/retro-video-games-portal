@@ -1,0 +1,103 @@
+---
+description: API design and documentation rules for RESTful endpoints
+globs: ["server/routes/**/*.js", "server/models/**/*.js"]
+alwaysApply: true
+---
+
+# API Design Rules
+
+## RESTful Design
+- Use proper HTTP methods (GET, POST, PUT, DELETE)
+- Use resource-based URLs
+- Implement proper status codes
+- Use consistent response formats
+- Include proper error handling
+- Follow REST conventions
+
+## Endpoint Design
+- Use clear and descriptive URLs
+- Implement proper versioning
+- Use consistent naming conventions
+- Include proper query parameters
+- Implement proper pagination
+- Use proper HTTP status codes
+
+## Request/Response Format
+- Use consistent JSON structure
+- Include proper error messages
+- Implement proper validation
+- Use proper content types
+- Include proper headers
+- Use consistent field naming
+
+## Authentication
+- Implement JWT-based authentication
+- Use proper token expiration
+- Include refresh token mechanism
+- Implement proper logout
+- Use secure token storage
+- Include proper error handling
+
+## Authorization
+- Implement role-based access control
+- Use proper permission checks
+- Include proper middleware
+- Test authorization boundaries
+- Use proper error responses
+- Include proper logging
+
+## Validation
+- Validate all input data
+- Use express-validator for validation
+- Include proper error messages
+- Sanitize input data
+- Test validation rules
+- Include proper error responses
+
+## Error Handling
+- Use consistent error format
+- Include proper error codes
+- Implement proper logging
+- Use proper HTTP status codes
+- Include error details
+- Test error scenarios
+
+## Documentation
+- Use Swagger/OpenAPI documentation
+- Include endpoint descriptions
+- Document request/response schemas
+- Include example requests
+- Document error responses
+- Keep documentation updated
+
+## Performance
+- Implement proper pagination
+- Use database indexing
+- Implement caching strategies
+- Optimize database queries
+- Use proper connection pooling
+- Monitor API performance
+
+## Security
+- Implement rate limiting
+- Use proper CORS configuration
+- Include security headers
+- Sanitize input data
+- Use proper authentication
+- Implement proper authorization
+
+## Testing
+- Test all endpoints
+- Test authentication flows
+- Test authorization boundaries
+- Test error scenarios
+- Test performance
+- Include proper test coverage
+
+## Best Practices
+- Use consistent naming conventions
+- Implement proper error handling
+- Include comprehensive documentation
+- Test all scenarios
+- Monitor API performance
+- Keep APIs simple and focused

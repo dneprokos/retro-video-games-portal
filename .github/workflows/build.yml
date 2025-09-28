@@ -1,10 +1,13 @@
-name: Build Retro Video Games Portal
+name: Build and Test Retro Video Games Portal
 
 on:
   pull_request:
+  push:
+    branches: [ main, develop ]
 
 jobs:
-  build:
+  # Backend Unit Tests
+  backend-unit-tests:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -17,7 +20,115 @@ jobs:
 
       - name: Install backend dependencies
         working-directory: ./server
-        run: npm install
+        run: npm ci
+
+      - name: Run backend unit tests
+        working-directory: ./server
+        run: npm test -- --testPathPattern="models|middleware"
+
+      - name: Run backend unit tests with coverage
+        working-directory: ./server
+        run: npm run test:coverage -- --testPathPattern="models|middleware"
+
+      - name: Upload backend coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./server/coverage/lcov.info
+          flags: backend
+          name: backend-coverage
+
+  # Frontend Unit Tests
+  frontend-unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install frontend dependencies
+        working-directory: ./client
+        run: npm ci
+
+      - name: Run frontend unit tests
+        working-directory: ./client
+        run: npm test
+
+      - name: Run frontend unit tests with coverage
+        working-directory: ./client
+        run: npm run test:coverage
+
+      - name: Upload frontend coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./client/coverage/lcov.info
+          flags: frontend
+          name: frontend-coverage
+
+  # Integration Tests
+  integration-tests:
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ping: 1})'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install backend dependencies
+        working-directory: ./server
+        run: npm ci
+
+      - name: Wait for MongoDB
+        run: |
+          until mongosh --eval "db.runCommand({ping: 1})" --quiet; do
+            echo "Waiting for MongoDB..."
+            sleep 2
+          done
+
+      - name: Run integration tests
+        working-directory: ./server
+        env:
+          MONGODB_URI: mongodb://localhost:27017/retro-games-test
+          JWT_SECRET: test-secret-key
+          NODE_ENV: test
+        run: npm test -- --testPathPattern=routes
+
+  # Build and Lint
+  build-and-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install backend dependencies
+        working-directory: ./server
+        run: npm ci
+
+      - name: Lint backend
+        working-directory: ./server
+        run: npm run lint || echo "No lint script found"
 
       - name: Build backend (if applicable)
         working-directory: ./server
@@ -26,9 +137,27 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: ./client
-        run: npm install
+        run: npm ci
+
+      - name: Lint frontend
+        working-directory: ./client
+        run: npm run lint || echo "No lint script found"
 
       - name: Build frontend
         working-directory: ./client
         run: |
-          if [ -f package.json ] && grep -q 'build' package.json; then npm run build; else echo "No build script"; fi 
+          if [ -f package.json ] && grep -q 'build' package.json; then npm run build; else echo "No build script"; fi
+
+  # Test Summary
+  test-summary:
+    runs-on: ubuntu-latest
+    needs: [backend-unit-tests, frontend-unit-tests, integration-tests, build-and-lint]
+    if: always()
+    steps:
+      - name: Test Summary
+        run: |
+          echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Backend Unit Tests: ${{ needs.backend-unit-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Frontend Unit Tests: ${{ needs.frontend-unit-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Integration Tests: ${{ needs.integration-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Build and Lint: ${{ needs.build-and-lint.result }}" >> $GITHUB_STEP_SUMMARY 

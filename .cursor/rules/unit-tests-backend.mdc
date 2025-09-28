@@ -1,0 +1,109 @@
+---
+description: Backend unit testing rules for models, middleware, and utilities
+globs: ["server/models/**/*.test.js", "server/middleware/**/*.test.js", "server/utils/**/*.test.js"]
+alwaysApply: true
+---
+
+# Backend Unit Testing Rules
+
+## Test Scope
+- Test individual models, middleware, and utility functions
+- Use MongoDB Memory Server for isolated testing
+- Mock external dependencies (APIs, file system, etc.)
+- Test business logic in isolation
+- Focus on single responsibility testing
+
+## Test Structure
+- Use describe blocks to group related tests
+- Use beforeEach/afterEach for setup and cleanup
+- Test both success and failure scenarios
+- Include edge cases and boundary conditions
+- Use meaningful test descriptions
+
+## Model Testing
+- Test schema validation with valid and invalid data
+- Test pre-save and post-save middleware
+- Test instance methods and static methods
+- Test virtual properties and computed fields
+- Test custom validators and constraints
+- Test database indexes and performance
+
+## Middleware Testing
+- Test authentication middleware with valid/invalid tokens
+- Test authorization middleware with different user roles
+- Test error handling middleware
+- Test request/response transformation
+- Test middleware chain execution
+- Test middleware error scenarios
+
+## Utility Function Testing
+- Test pure functions with various inputs
+- Test error handling and edge cases
+- Test return values and side effects
+- Test input validation and sanitization
+- Test performance with large datasets
+- Test concurrent execution
+
+## Test Data Management
+- Use test data factories for consistent data
+- Create realistic test data that matches production
+- Use proper test data cleanup after each test
+- Avoid hardcoded test data
+- Use meaningful test data that tells a story
+- Implement test data isolation
+
+## Mocking Patterns
+- Mock external API calls
+- Mock database operations when testing business logic
+- Mock file system operations
+- Mock time-dependent functions
+- Use spies for function call verification
+- Mock environment variables
+
+## Assertion Patterns
+- Use specific assertions (toBe, toEqual, toContain)
+- Test exact values, not just truthiness
+- Test error messages and error types
+- Test return value structure
+- Test side effects and state changes
+- Use async/await for asynchronous tests
+
+## Performance Testing
+- Test function execution time
+- Test memory usage patterns
+- Test with large datasets
+- Test concurrent operations
+- Test database query performance
+- Monitor test execution time
+
+## Error Testing
+- Test validation errors with invalid input
+- Test custom error messages
+- Test error handling and recovery
+- Test timeout scenarios
+- Test malformed data handling
+- Test edge cases that might cause errors
+
+## Test Organization
+- Group tests by functionality
+- Use descriptive test names
+- Include test context in descriptions
+- Separate unit tests from integration tests
+- Use proper test file naming conventions
+- Keep tests focused and single-purpose
+
+## Coverage Requirements
+- Aim for 90%+ coverage on business logic
+- Test all code paths and branches
+- Test error conditions and edge cases
+- Include negative test cases
+- Test boundary conditions
+- Ensure all functions are tested
+
+## Best Practices
+- Write tests before or alongside code
+- Keep tests simple and readable
+- Use meaningful variable names in tests
+- Avoid testing implementation details
+- Focus on behavior, not implementation
+- Make tests independent and isolated

@@ -1,0 +1,111 @@
+---
+description: Integration testing rules for API endpoints and database interactions
+globs: ["server/routes/**/*.test.js", "**/*.integration.test.js"]
+alwaysApply: true
+---
+
+# Integration Testing Rules
+
+## Test Scope
+- Test API endpoints with real database
+- Test complete request/response cycles
+- Test authentication and authorization flows
+- Test database operations and transactions
+- Test middleware integration
+- Test error handling across layers
+
+## API Endpoint Testing
+- Test all HTTP methods (GET, POST, PUT, DELETE)
+- Test request validation and sanitization
+- Test response format and status codes
+- Test pagination and filtering
+- Test sorting and search functionality
+- Test rate limiting and security headers
+
+## Authentication Testing
+- Test login and registration flows
+- Test JWT token generation and validation
+- Test password hashing and comparison
+- Test session management
+- Test logout and token invalidation
+- Test role-based access control
+
+## Database Integration
+- Test database connections and transactions
+- Test data persistence and retrieval
+- Test database constraints and validations
+- Test database performance and indexing
+- Test data migration and seeding
+- Test database cleanup and rollback
+
+## Request/Response Testing
+- Test request body validation
+- Test query parameter handling
+- Test header processing
+- Test response serialization
+- Test error response formatting
+- Test content-type handling
+
+## Middleware Integration
+- Test middleware chain execution
+- Test authentication middleware
+- Test authorization middleware
+- Test error handling middleware
+- Test request transformation
+- Test response modification
+
+## Error Handling Testing
+- Test validation errors
+- Test authentication errors
+- Test authorization errors
+- Test database errors
+- Test network errors
+- Test timeout scenarios
+
+## Performance Testing
+- Test API response times
+- Test database query performance
+- Test concurrent request handling
+- Test memory usage under load
+- Test connection pooling
+- Test caching effectiveness
+
+## Security Testing
+- Test input sanitization
+- Test SQL injection prevention
+- Test XSS protection
+- Test CSRF protection
+- Test rate limiting
+- Test security headers
+
+## Test Data Management
+- Use realistic test data
+- Implement proper test data cleanup
+- Use database transactions for isolation
+- Create test data factories
+- Use meaningful test scenarios
+- Avoid test data pollution
+
+## Test Environment
+- Use test database for isolation
+- Configure test environment variables
+- Use proper test data setup
+- Implement test data cleanup
+- Use consistent test environment
+- Monitor test execution time
+
+## Coverage Requirements
+- Test all API endpoints
+- Test all authentication flows
+- Test all error scenarios
+- Test all middleware combinations
+- Test all database operations
+- Ensure comprehensive coverage
+
+## Best Practices
+- Use real database for integration tests
+- Test complete user workflows
+- Test error scenarios thoroughly
+- Use proper test data management
+- Keep tests independent
+- Focus on business logic integration

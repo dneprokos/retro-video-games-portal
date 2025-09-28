@@ -1,0 +1,119 @@
+---
+description: Frontend unit testing rules for React components, hooks, and utilities
+globs: ["client/src/components/**/*.test.js", "client/src/hooks/**/*.test.js", "client/src/utils/**/*.test.js"]
+alwaysApply: true
+---
+
+# Frontend Unit Testing Rules
+
+## Test Scope
+- Test individual React components in isolation
+- Test custom hooks and their behavior
+- Test utility functions and helpers
+- Mock external dependencies (APIs, browser APIs)
+- Focus on component behavior and user interactions
+- Test accessibility features
+
+## Component Testing
+- Test component rendering with different props
+- Test user interactions (clicks, form inputs, navigation)
+- Test component state changes
+- Test conditional rendering and dynamic content
+- Test error states and loading states
+- Test component lifecycle methods
+
+## Hook Testing
+- Test custom hooks with renderHook utility
+- Test hook state changes and side effects
+- Test hook dependencies and re-renders
+- Test hook error handling
+- Test hook cleanup and memory leaks
+- Test hook integration with components
+
+## User Interaction Testing
+- Use fireEvent for user interactions
+- Test keyboard navigation and accessibility
+- Test form submission and validation
+- Test button clicks and navigation
+- Test drag and drop interactions
+- Test focus management
+
+## Mocking Patterns
+- Mock API calls with MSW or Jest mocks
+- Mock browser APIs (localStorage, fetch, etc.)
+- Mock React Router for navigation tests
+- Mock external libraries and dependencies
+- Use jest.mock for module mocking
+- Mock context providers when needed
+
+## Accessibility Testing
+- Test keyboard navigation
+- Test screen reader compatibility
+- Test ARIA attributes and roles
+- Test focus management
+- Test color contrast and visual indicators
+- Test form labels and descriptions
+
+## State Testing
+- Test component state initialization
+- Test state updates and side effects
+- Test state persistence (localStorage, sessionStorage)
+- Test state cleanup and reset
+- Test state validation and error handling
+- Test state synchronization
+
+## Props Testing
+- Test component with different prop combinations
+- Test default props and prop validation
+- Test prop changes and re-renders
+- Test optional and required props
+- Test prop types and validation
+- Test prop callbacks and event handlers
+
+## Event Testing
+- Test event handlers and callbacks
+- Test event propagation and bubbling
+- Test custom events and event listeners
+- Test event cleanup and memory leaks
+- Test event debouncing and throttling
+- Test event error handling
+
+## Performance Testing
+- Test component re-render optimization
+- Test memoization and useMemo usage
+- Test lazy loading and code splitting
+- Test bundle size impact
+- Test memory usage and leaks
+- Test rendering performance
+
+## Error Boundary Testing
+- Test error boundary behavior
+- Test error recovery and fallback UI
+- Test error logging and reporting
+- Test error state management
+- Test error user experience
+- Test error cleanup and reset
+
+## Test Utilities
+- Use custom render functions for common setup
+- Create test data factories for components
+- Use screen queries for element selection
+- Implement custom matchers for assertions
+- Create reusable test helpers
+- Use proper cleanup and teardown
+
+## Coverage Requirements
+- Aim for 90%+ coverage on components
+- Test all user interaction paths
+- Test error conditions and edge cases
+- Include accessibility test coverage
+- Test all component states
+- Ensure all props and callbacks are tested
+
+## Best Practices
+- Test user behavior, not implementation
+- Use data-testid for reliable element selection
+- Test accessibility features explicitly
+- Keep tests focused and single-purpose
+- Use meaningful test descriptions
+- Make tests independent and isolated

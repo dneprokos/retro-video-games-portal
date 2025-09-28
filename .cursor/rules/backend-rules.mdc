@@ -1,0 +1,144 @@
+---
+description: Backend development rules for Node.js/Express/MongoDB server
+globs: ["server/**/*", "docker/**/*", "*.yml", "*.yaml"]
+alwaysApply: true
+---
+
+# Backend Development Rules
+
+## Server Architecture
+- Node.js + Express.js framework
+- MongoDB with Mongoose ODM
+- JWT-based authentication with role-based access control
+- RESTful API with Swagger documentation
+- Jest + Supertest + MongoDB Memory Server for testing
+- Docker containerization
+
+## Directory Structure
+- models/: Mongoose schemas with validation
+- routes/: Express routes with Swagger docs
+- middleware/: Custom middleware (auth, validation)
+- test/: Test setup and utilities
+- coverage/: Test coverage reports
+- seed.js: Database seeding script
+- server.js: Main application entry
+- jest.config.js: Jest configuration
+
+## File Naming Conventions
+- Models: PascalCase (Game.js, User.js)
+- Routes: kebab-case (auth.js, game-routes.js)
+- Middleware: kebab-case (auth.js, validation.js)
+- Tests: ModelName.test.js, route-name.test.js
+- Utilities: camelCase (gameUtils.js, authUtils.js)
+
+## Database & Models
+- Use comprehensive validation with descriptive error messages
+- Include required fields with proper validation rules
+- Use enums for constrained values (genres, roles)
+- Implement custom validators for complex rules
+- Add pre-save middleware for data processing
+- Create instance methods for common operations
+- Add static methods for common queries
+- Include virtual properties for computed values
+- Create database indexes for performance
+- Use timestamps for created/updated tracking
+
+## API Routes & Controllers
+- Use express-validator for input validation
+- Include comprehensive Swagger documentation
+- Implement proper error handling with try-catch
+- Use consistent response formats
+- Include pagination for list endpoints
+- Implement search and filtering capabilities
+- Add sorting options for list endpoints
+- Use proper HTTP status codes
+- Include authentication middleware where needed
+- Implement role-based authorization
+
+## Middleware Patterns
+- JWT token authentication with proper error handling
+- Role-based authorization (Guest, Admin, Owner)
+- Optional authentication for public routes with user context
+- Global error handler for consistent error responses
+- 404 handler for unknown routes
+- Input validation middleware
+- Rate limiting middleware
+- CORS configuration
+- Security headers with Helmet.js
+
+## Error Handling
+- Use try-catch blocks for all async operations
+- Implement global error handler
+- Handle Mongoose validation errors
+- Handle JWT errors (invalid, expired)
+- Handle duplicate key errors
+- Handle cast errors for invalid ObjectIds
+- Use consistent error response format
+- Log errors with structured logging
+- Don't expose sensitive data in error messages
+
+## Testing Patterns
+- Use MongoDB Memory Server for isolated testing
+- Create test utilities for common operations
+- Test model validation and methods
+- Test route endpoints with various scenarios
+- Test authentication and authorization
+- Test error handling and edge cases
+- Use proper setup and teardown
+- Mock external dependencies
+- Test both success and failure scenarios
+
+## Environment & Configuration
+- Validate required environment variables
+- Use configuration objects for settings
+- Include proper defaults for optional variables
+- Use environment-specific configurations
+- Include database connection options
+- Configure JWT settings
+- Set up CORS origins
+- Configure rate limiting
+
+## Docker Configuration
+- Use multi-stage builds for optimization
+- Create non-root user for security
+- Include health checks for containers
+- Use proper environment variable handling
+- Include database initialization scripts
+- Use docker-compose for local development
+- Optimize image layers for caching
+- Include proper port exposure
+
+## Performance & Monitoring
+- Use database indexing for performance
+- Implement connection pooling
+- Include caching strategies
+- Use compression middleware
+- Monitor API response times
+- Track database query performance
+- Use structured logging with JSON format
+- Include error tracking and monitoring
+- Implement health check endpoints
+
+## Security Best Practices
+- Hash passwords with bcrypt (salt rounds: 12)
+- Use JWT tokens with proper expiration
+- Implement role-based access control
+- Validate all inputs on server side
+- Use environment variables for sensitive data
+- Include security headers
+- Implement rate limiting
+- Use HTTPS in production
+- Sanitize user inputs
+- Implement proper session management
+
+## Code Quality Standards
+- Use JSDoc for functions and classes
+- Include comprehensive Swagger documentation
+- Write clear commit messages
+- Include README files for setup instructions
+- Document environment variables
+- Use consistent code formatting
+- Include proper error handling
+- Implement proper logging
+- Use meaningful variable names
+- Follow single responsibility principle
