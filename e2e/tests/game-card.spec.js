@@ -25,7 +25,7 @@ test.describe('Game Card Functionality', () => {
     expect(gameName).toBeDefined();
     
     // Navigate directly to the game details page
-    await page.goto(`http://localhost:9000/game/${gameId}`);
+    await page.goto(`http://localhost:3000/game/${gameId}`);
     
     // Wait for the page to load - use a more reliable approach
     await page.waitForSelector('[data-testid="game-name"]', { timeout: 10000 });
@@ -97,7 +97,7 @@ test.describe('Game Card Functionality', () => {
   test('should handle invalid game ID gracefully', async ({ page }) => {
     // Navigate to a non-existent game ID
     const invalidGameId = 'invalid-game-id-12345';
-    await page.goto(`http://localhost:9000/game/${invalidGameId}`);
+    await page.goto(`http://localhost:3000/game/${invalidGameId}`);
     
     // Wait for the page to load - use a more reliable approach
     await page.waitForSelector('[data-testid="error-message"]', { timeout: 10000 });
@@ -120,7 +120,7 @@ test.describe('Game Card Functionality', () => {
     const gameId = gamesResponse.data.games[0]._id;
     
     // Navigate to game details page
-    await page.goto(`http://localhost:9000/game/${gameId}`);
+    await page.goto(`http://localhost:3000/game/${gameId}`);
     await page.waitForSelector('[data-testid="game-name"]', { timeout: 10000 });
     
     // Click back to home button (if exists)
@@ -129,7 +129,7 @@ test.describe('Game Card Functionality', () => {
       await backButton.click();
       
       // Verify we're back on the home page
-      await expect(page).toHaveURL('http://localhost:9000/');
+      await expect(page).toHaveURL('http://localhost:3000/');
       await expect(page).toHaveTitle('Retro Games Portal');
     }
   });

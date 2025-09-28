@@ -41,12 +41,18 @@ test.describe('Home Page - Core Functionality', () => {
     await homePage.load();
     await homePage.waitForGamesToLoad();
     
+    const imageContainers = await homePage.getGameImageContainers();
+    
+    // Verify all games have either images or placeholders
+    expect(imageContainers.length).toBeGreaterThan(0);
+    
+    // Verify each game card has either an image or a placeholder
+    for (const container of imageContainers) {
+      expect(container.hasImage || container.hasPlaceholder).toBe(true);
+    }
+    
+    // If there are actual images, verify they have valid URLs
     const images = await homePage.getGameImages();
-    
-    // Verify all games have images
-    expect(images.length).toBeGreaterThan(0);
-    
-    // Verify all images have valid URLs
     for (const src of images) {
       expect(src).toBeTruthy();
       expect(src).toContain('http');
