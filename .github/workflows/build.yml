@@ -198,7 +198,12 @@ jobs:
           sleep 10
           echo "Backend server started"
 
+      - name: Install E2E dependencies
+        working-directory: ./e2e
+        run: npm ci
+
       - name: Install Playwright browsers
+        working-directory: ./e2e
         run: npx playwright install --with-deps
 
       - name: Run E2E tests
