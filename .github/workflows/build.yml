@@ -198,19 +198,30 @@ jobs:
           sleep 10
           echo "Backend server started"
 
+      - name: Install serve package
+        working-directory: ./client
+        run: npm install -g serve
+
+      - name: Start frontend server
+        working-directory: ./client
+        run: |
+          serve -s build -l 3000 &
+          sleep 5
+          echo "Frontend server started on port 3000"
+
       - name: Install E2E dependencies
         working-directory: ./e2e
         run: npm ci
 
-      - name: Install Playwright browsers
+      - name: Install Playwright browsers (Chromium only)
         working-directory: ./e2e
-        run: npx playwright install --with-deps
+        run: npx playwright install chromium --with-deps
 
-      - name: Run E2E tests
+      - name: Run E2E tests (Chromium only)
         working-directory: ./e2e
         env:
-          BASE_URL: http://localhost:5000
-        run: timeout 600 npm test
+          BASE_URL: http://localhost:3000
+        run: timeout 600 npx playwright test --project=chromium
 
       - name: Upload E2E test results
         uses: actions/upload-artifact@v4
