@@ -8,7 +8,7 @@ class HomePage extends BasePage {
     this.selectors = {
       gameCard: '[data-testid="game-card"]',
       gameName: '[data-testid="game-name"]',
-      gameRating: '[data-testid="game-rating"] span',
+      gameRating: '[data-testid="game-rating-value"]',
       gameImage: '[data-testid="game-card"] img',
       filterPanel: '[data-testid="filter-panel"]',
       filterPanelContent: '[data-testid="filter-panel-content"]',
@@ -143,6 +143,7 @@ class HomePage extends BasePage {
   async waitForGamesToLoad() {
     // Wait for either games to load or no results message
     try {
+      // Wait for either games grid or no results message to appear
       await this.page.waitForSelector(`${this.selectors.gamesGrid}, ${this.selectors.noResults}`, { timeout: 10000 });
     } catch (error) {
       // If timeout, check if loading screen is still visible
@@ -150,7 +151,12 @@ class HomePage extends BasePage {
       if (isLoadingVisible) {
         throw new Error('Games failed to load - loading screen still visible');
       }
-      throw error;
+      // If no loading screen, check if we have any content at all
+      const hasGamesGrid = await this.isElementVisible(this.selectors.gamesGrid);
+      const hasNoResults = await this.isElementVisible(this.selectors.noResults);
+      if (!hasGamesGrid && !hasNoResults) {
+        throw new Error('Neither games grid nor no results message found');
+      }
     }
   }
 

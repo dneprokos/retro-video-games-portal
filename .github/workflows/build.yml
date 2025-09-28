@@ -24,11 +24,11 @@ jobs:
 
       - name: Run backend unit tests
         working-directory: ./server
-        run: timeout 300 npm test -- --testPathPattern="models|middleware"
+        run: timeout 120 npm test -- --testPathPattern="models|middleware"
 
       - name: Run backend unit tests with coverage
         working-directory: ./server
-        run: timeout 300 npm run test:coverage -- --testPathPattern="models|middleware" --coverageThreshold='{}'
+        run: timeout 120 npm run test:coverage -- --testPathPattern="models|middleware" --coverageThreshold='{}'
 
       - name: Upload backend coverage to Codecov
         uses: codecov/codecov-action@v3
@@ -55,11 +55,11 @@ jobs:
 
       - name: Run frontend unit tests
         working-directory: ./client
-        run: timeout 300 npm test
+        run: timeout 120 npm test
 
       - name: Run frontend unit tests with coverage
         working-directory: ./client
-        run: timeout 300 npm run test:coverage --coverageThreshold='{}'
+        run: timeout 120 npm run test:coverage --coverageThreshold='{}'
 
       - name: Upload frontend coverage to Codecov
         uses: codecov/codecov-action@v3
@@ -107,7 +107,7 @@ jobs:
           MONGODB_URI: mongodb://localhost:27017/retro-games-test
           JWT_SECRET: test-secret-key
           NODE_ENV: test
-        run: timeout 300 npm test -- --testPathPattern=routes
+        run: timeout 180 npm test -- --testPathPattern=routes
 
   # Build and Lint
   build-and-lint:
@@ -198,6 +198,17 @@ jobs:
           sleep 10
           echo "Backend server started"
 
+      - name: Seed database for E2E tests
+        working-directory: ./server
+        env:
+          MONGODB_URI: mongodb://localhost:27017/retro-games-e2e
+          JWT_SECRET: test-secret-key
+          NODE_ENV: test
+        run: |
+          echo "Seeding database for E2E tests..."
+          timeout 30 npm run seed
+          echo "Database seeded successfully!"
+
       - name: Install serve package
         working-directory: ./client
         run: npm install -g serve
@@ -221,7 +232,7 @@ jobs:
         working-directory: ./e2e
         env:
           BASE_URL: http://localhost:3000
-        run: timeout 600 npx playwright test --project=chromium
+        run: timeout 300 npx playwright test --project=chromium
 
       - name: Upload E2E test results
         uses: actions/upload-artifact@v4
