@@ -24,11 +24,11 @@ jobs:
 
       - name: Run backend unit tests
         working-directory: ./server
-        run: npm test -- --testPathPattern="models|middleware"
+        run: timeout 300 npm test -- --testPathPattern="models|middleware"
 
       - name: Run backend unit tests with coverage
         working-directory: ./server
-        run: npm run test:coverage -- --testPathPattern="models|middleware"
+        run: timeout 300 npm run test:coverage -- --testPathPattern="models|middleware"
 
       - name: Upload backend coverage to Codecov
         uses: codecov/codecov-action@v3
@@ -55,11 +55,11 @@ jobs:
 
       - name: Run frontend unit tests
         working-directory: ./client
-        run: npm test
+        run: timeout 300 npm test
 
       - name: Run frontend unit tests with coverage
         working-directory: ./client
-        run: npm run test:coverage
+        run: timeout 300 npm run test:coverage
 
       - name: Upload frontend coverage to Codecov
         uses: codecov/codecov-action@v3
@@ -97,10 +97,9 @@ jobs:
 
       - name: Wait for MongoDB
         run: |
-          until mongosh --eval "db.runCommand({ping: 1})" --quiet; do
-            echo "Waiting for MongoDB..."
-            sleep 2
-          done
+          echo "Waiting for MongoDB to be ready..."
+          timeout 60 bash -c 'until nc -z localhost 27017; do sleep 2; done'
+          echo "MongoDB is ready!"
 
       - name: Run integration tests
         working-directory: ./server
@@ -108,7 +107,7 @@ jobs:
           MONGODB_URI: mongodb://localhost:27017/retro-games-test
           JWT_SECRET: test-secret-key
           NODE_ENV: test
-        run: npm test -- --testPathPattern=routes
+        run: timeout 300 npm test -- --testPathPattern=routes
 
   # Build and Lint
   build-and-lint:
