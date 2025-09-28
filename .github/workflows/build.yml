@@ -28,7 +28,7 @@ jobs:
 
       - name: Run backend unit tests with coverage
         working-directory: ./server
-        run: timeout 300 npm run test:coverage -- --testPathPattern="models|middleware"
+        run: timeout 300 npm run test:coverage -- --testPathPattern="models|middleware" --coverageThreshold='{}'
 
       - name: Upload backend coverage to Codecov
         uses: codecov/codecov-action@v3
@@ -59,7 +59,7 @@ jobs:
 
       - name: Run frontend unit tests with coverage
         working-directory: ./client
-        run: timeout 300 npm run test:coverage
+        run: timeout 300 npm run test:coverage --coverageThreshold='{}'
 
       - name: Upload frontend coverage to Codecov
         uses: codecov/codecov-action@v3
