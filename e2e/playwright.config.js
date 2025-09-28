@@ -33,6 +33,10 @@ module.exports = defineConfig({
     
     /* Record video on failure */
     video: 'retain-on-failure',
+    
+    /* Timeout settings */
+    actionTimeout: 10000,
+    navigationTimeout: 30000,
   },
 
   /* Configure projects for major browsers */

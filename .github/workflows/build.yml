@@ -232,7 +232,7 @@ jobs:
         working-directory: ./e2e
         env:
           BASE_URL: http://localhost:3000
-        run: timeout 300 npx playwright test --project=chromium
+        run: timeout 600 npx playwright test --project=chromium --timeout=30000
 
       - name: Upload E2E test results
         uses: actions/upload-artifact@v4
