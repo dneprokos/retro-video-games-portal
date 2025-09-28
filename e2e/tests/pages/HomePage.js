@@ -165,9 +165,24 @@ class HomePage extends BasePage {
     const srcs = [];
     for (let i = 0; i < await images.count(); i++) {
       const src = await images.nth(i).getAttribute('src');
-      srcs.push(src);
+      if (src) {
+        srcs.push(src);
+      }
     }
     return srcs;
+  }
+
+  async getGameImageContainers() {
+    // Get all game cards and check if they have either images or placeholders
+    const gameCards = await this.page.locator(this.selectors.gameCard);
+    const containers = [];
+    for (let i = 0; i < await gameCards.count(); i++) {
+      const card = gameCards.nth(i);
+      const hasImage = await card.locator('img').count() > 0;
+      const hasPlaceholder = await card.locator('div:has-text("No Image Available")').count() > 0;
+      containers.push({ hasImage, hasPlaceholder });
+    }
+    return containers;
   }
 }
 
