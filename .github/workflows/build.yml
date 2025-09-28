@@ -208,7 +208,7 @@ jobs:
         run: timeout 600 npm test
 
       - name: Upload E2E test results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: playwright-report
