@@ -1,0 +1,95 @@
+---
+description: React component patterns and best practices
+globs: ["client/src/components/**/*.js", "client/src/pages/**/*.js"]
+alwaysApply: true
+---
+
+# Component Patterns Rules
+
+## Component Structure
+- Use functional components with hooks
+- Implement proper prop validation
+- Use meaningful component names
+- Keep components focused and single-purpose
+- Implement proper error boundaries
+- Use proper component composition
+
+## State Management
+- Use useState for local state
+- Use useReducer for complex state
+- Use useContext for global state
+- Implement proper state updates
+- Use proper state initialization
+- Handle state cleanup
+
+## Props and Events
+- Use descriptive prop names
+- Implement proper prop types
+- Use default props appropriately
+- Handle event callbacks properly
+- Use proper event naming
+- Implement proper prop validation
+
+## Hooks Usage
+- Use custom hooks for reusable logic
+- Implement proper hook dependencies
+- Use useCallback for event handlers
+- Use useMemo for expensive calculations
+- Implement proper hook cleanup
+- Use proper hook patterns
+
+## Performance Optimization
+- Use React.memo for expensive components
+- Implement proper memoization
+- Use lazy loading for routes
+- Optimize re-renders
+- Use proper key props
+- Implement proper virtualization
+
+## Accessibility
+- Use semantic HTML elements
+- Implement proper ARIA attributes
+- Ensure keyboard navigation
+- Use proper focus management
+- Include proper labels
+- Test accessibility features
+
+## Styling Patterns
+- Use Tailwind CSS consistently
+- Implement responsive design
+- Use consistent spacing
+- Implement proper hover states
+- Use consistent color schemes
+- Implement proper loading states
+
+## Error Handling
+- Implement error boundaries
+- Handle component errors gracefully
+- Display user-friendly error messages
+- Implement proper error recovery
+- Use proper error logging
+- Test error scenarios
+
+## Testing
+- Include data-testid attributes
+- Test user interactions
+- Test component behavior
+- Test accessibility features
+- Test error scenarios
+- Use proper test utilities
+
+## Code Quality
+- Use meaningful variable names
+- Implement proper comments
+- Use consistent code formatting
+- Follow React best practices
+- Use proper import/export patterns
+- Keep components maintainable
+
+## Best Practices
+- Keep components small and focused
+- Use proper component composition
+- Implement proper error handling
+- Test all component behavior
+- Use proper accessibility patterns
+- Follow React conventions

@@ -1,0 +1,165 @@
+---
+description: Frontend development rules for React client application
+globs: ["client/**/*", "public/**/*"]
+alwaysApply: true
+---
+
+# Frontend Development Rules
+
+## Frontend Architecture
+- React 18 with hooks and modern patterns
+- React Router DOM v6 for routing
+- React Context + useState/useReducer for state management
+- Tailwind CSS with custom components
+- Axios for API communication
+- React Testing Library + Jest for testing
+- Lucide React for icons
+- React Hot Toast for notifications
+
+## Directory Structure
+- components/: Reusable UI components
+- pages/: Route components
+- contexts/: React contexts
+- mocks/: MSW mock handlers
+- test-utils.js: Testing utilities
+- setupTests.js: Test configuration
+- App.js: Main app component
+
+## Component Naming Conventions
+- Components: PascalCase (GameCard.js, FilterPanel.js)
+- Pages: PascalCase (Home.js, GameDetails.js)
+- Hooks: camelCase starting with 'use' (useAuth.js, useGames.js)
+- Utilities: camelCase (gameUtils.js, authUtils.js)
+- Constants: UPPER_SNAKE_CASE (API_ENDPOINTS.js, GAME_GENRES.js)
+
+## React Component Patterns
+- Use functional components with hooks
+- Implement proper state management with useState/useReducer
+- Use useCallback for event handlers and memoized functions
+- Use useMemo for expensive calculations
+- Use useEffect for side effects
+- Implement proper cleanup in useEffect
+- Use PropTypes for type checking
+- Include data-testid attributes for testing
+- Handle loading and error states
+- Implement proper accessibility
+
+## Custom Hooks Patterns
+- Create custom hooks for reusable logic
+- Use useContext for accessing context values
+- Implement proper error handling in hooks
+- Use useLocalStorage for persistent state
+- Create hooks for API calls and data fetching
+- Implement proper loading states
+- Handle error states gracefully
+- Use proper dependency arrays in useEffect
+
+## Context Patterns
+- Use React Context for global state
+- Implement proper context providers
+- Use useContext hook for consuming context
+- Handle authentication state with context
+- Implement proper error handling in context
+- Use context for theme and user preferences
+- Implement proper context value memoization
+
+## Styling & UI Patterns
+- Use Tailwind CSS for styling
+- Implement responsive design with mobile-first approach
+- Use CSS Grid and Flexbox for layouts
+- Implement dark mode support
+- Use consistent spacing and typography
+- Implement proper hover and focus states
+- Use consistent color schemes
+- Implement proper loading states
+- Use skeleton loading for better UX
+
+## Form Patterns
+- Use controlled components for forms
+- Implement proper validation
+- Use react-hook-form for complex forms
+- Handle form submission with proper error handling
+- Implement proper loading states during submission
+- Use proper form accessibility
+- Implement proper error messages
+- Use consistent form styling
+
+## API Integration Patterns
+- Use Axios for HTTP requests
+- Implement request/response interceptors
+- Handle authentication tokens automatically
+- Implement proper error handling for API calls
+- Use proper loading states
+- Implement retry logic for failed requests
+- Use proper timeout handling
+- Implement proper request cancellation
+
+## Testing Patterns
+- Use React Testing Library for component testing
+- Test user interactions and behavior
+- Mock API calls and external dependencies
+- Test error states and edge cases
+- Use proper test utilities and helpers
+- Test accessibility features
+- Use proper test data and fixtures
+- Test component integration
+
+## Performance Optimization
+- Use React.memo for expensive components
+- Implement proper loading states
+- Use lazy loading for routes
+- Optimize bundle sizes
+- Use code splitting
+- Implement proper error boundaries
+- Use useMemo and useCallback appropriately
+- Avoid unnecessary re-renders
+
+## Accessibility Standards
+- Use semantic HTML elements
+- Include proper ARIA labels
+- Ensure keyboard navigation works
+- Maintain proper color contrast
+- Include alt text for images
+- Use proper heading hierarchy
+- Implement focus management
+- Use proper form labels
+
+## Responsive Design
+- Use mobile-first approach
+- Test on multiple screen sizes
+- Use CSS Grid and Flexbox
+- Implement proper breakpoints
+- Optimize for touch interactions
+- Use responsive images
+- Implement proper navigation for mobile
+- Use proper spacing for different screen sizes
+
+## State Management
+- Use React Context for global state
+- Use useState for local component state
+- Use useReducer for complex state logic
+- Implement proper state updates
+- Use proper state initialization
+- Handle state persistence with localStorage
+- Implement proper state cleanup
+- Use proper state validation
+
+## Error Handling
+- Implement error boundaries for React components
+- Handle API errors gracefully
+- Display user-friendly error messages
+- Implement proper error logging
+- Handle network errors
+- Implement proper fallbacks
+- Use proper error recovery
+- Implement proper error reporting
+
+## Code Quality Standards
+- Use meaningful component and variable names
+- Implement proper prop validation with PropTypes
+- Use consistent code formatting
+- Include proper comments for complex logic
+- Use proper import/export patterns
+- Implement proper error handling
+- Use proper TypeScript if applicable
+- Follow React best practices

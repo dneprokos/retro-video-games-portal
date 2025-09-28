@@ -238,7 +238,7 @@ describe('Game Model', () => {
       });
 
       const savedGame = await game.save();
-      expect(savedGame.getImageUrl()).toBe('/images/default-game.png');
+      expect(savedGame.getImageUrl()).toBe('/images/default-game.svg');
     });
 
     it('should return provided image URL when available', async () => {
