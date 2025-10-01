@@ -1,0 +1,30 @@
+# Build client, push it to GCR and deploy it to Cloud Run
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args: ['-c', 'docker pull ${_IMAGE}:${_IMAGE_TAG} || exit 0']
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--tag=${_IMAGE}:${_IMAGE_TAG}'
+      - '--cache-from=${_IMAGE}:${_IMAGE_TAG}'
+      - '.'
+    timeout: 3000s
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ 'push', '${_IMAGE}:${_IMAGE_TAG}' ]
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'retro-games-client'
+      - '--image=${_IMAGE}:${_IMAGE_TAG}'
+      - '--region=europe-west1'
+images: [ '${_IMAGE}:${_IMAGE_TAG}' ]
+substitutions:
+  _IMAGE: gcr.io/${PROJECT_ID}/client
+  _IMAGE_TAG: latest
+options:
+  dynamicSubstitutions: true
+
+# Envs to be configured:
+# - REACT_APP_API_URL=https://foobar-server.europe-west1.run.app/api

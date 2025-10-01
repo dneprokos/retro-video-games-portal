@@ -36,7 +36,10 @@ Thumbs.db
 coverage/
 
 # Ignore uploads if used for local dev
-server/uploads/ 
+server/uploads/
+
+# Ignore deployment archive
+server/deployment.zip
 
 # Playwright
 e2e/test-results/
