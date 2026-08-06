@@ -5,6 +5,55 @@ const { authenticateToken, requireOwner } = require('../middleware/auth');
 
 const router = express.Router();
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     AdminUser:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *         email:
+ *           type: string
+ *         role:
+ *           type: string
+ *           enum: [guest, admin, owner]
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *         lastLogin:
+ *           type: string
+ *           format: date-time
+ */
+
+/**
+ * @swagger
+ * /admin/users:
+ *   get:
+ *     summary: Get all admin users (Owner only)
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of admin users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 admins:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/AdminUser'
+ *       401:
+ *         description: Missing or invalid token
+ *       403:
+ *         description: Owner role required
+ *       500:
+ *         description: Server error
+ */
 // @route   GET /api/admin/users
 // @desc    Get all admin users (Owner only)
 // @access  Private (Owner)
@@ -21,6 +70,63 @@ router.get('/users', [authenticateToken, requireOwner], async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /admin/users:
+ *   post:
+ *     summary: Create a new admin user (Owner only)
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, password, confirmPassword]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: admin@example.com
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *                 example: Test12345
+ *               confirmPassword:
+ *                 type: string
+ *                 example: Test12345
+ *     responses:
+ *       201:
+ *         description: Admin user created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 admin:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     role:
+ *                       type: string
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *       400:
+ *         description: Validation error or email already in use
+ *       401:
+ *         description: Missing or invalid token
+ *       403:
+ *         description: Owner role required
+ *       500:
+ *         description: Server error
+ */
 // @route   POST /api/admin/users
 // @desc    Create new admin user (Owner only)
 // @access  Private (Owner)
@@ -80,6 +186,42 @@ router.post('/users', [
   }
 });
 
+/**
+ * @swagger
+ * /admin/users/{id}:
+ *   delete:
+ *     summary: Delete an admin user (Owner only)
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Admin user id
+ *     responses:
+ *       200:
+ *         description: Admin user deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Target user is not an admin
+ *       401:
+ *         description: Missing or invalid token
+ *       403:
+ *         description: Owner role required
+ *       404:
+ *         description: Admin user not found
+ *       500:
+ *         description: Server error
+ */
 // @route   DELETE /api/admin/users/:id
 // @desc    Delete admin user (Owner only)
 // @access  Private (Owner)
@@ -104,6 +246,51 @@ router.delete('/users/:id', [authenticateToken, requireOwner], async (req, res) 
   }
 });
 
+/**
+ * @swagger
+ * /admin/stats:
+ *   get:
+ *     summary: Get admin statistics (Owner only)
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Counts plus the five most recently active admins
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 stats:
+ *                   type: object
+ *                   properties:
+ *                     totalAdmins:
+ *                       type: integer
+ *                     totalGames:
+ *                       type: integer
+ *                 recentAdmins:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                       email:
+ *                         type: string
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                       lastLogin:
+ *                         type: string
+ *                         format: date-time
+ *       401:
+ *         description: Missing or invalid token
+ *       403:
+ *         description: Owner role required
+ *       500:
+ *         description: Server error
+ */
 // @route   GET /api/admin/stats
 // @desc    Get admin statistics (Owner only)
 // @access  Private (Owner)
