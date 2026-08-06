@@ -112,6 +112,63 @@ router.post('/login', [
   }
 });
 
+/**
+ * @swagger
+ * /auth/register:
+ *   post:
+ *     summary: Create the owner account (single use)
+ *     description: Only accepts the address configured in OWNER_EMAIL, and only while no owner exists. Admins are created afterwards by the owner via POST /admin/users.
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, password, confirmPassword]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: owner@example.com
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *                 example: Test12345
+ *               confirmPassword:
+ *                 type: string
+ *                 example: Test12345
+ *     responses:
+ *       201:
+ *         description: Owner account created, returns JWT token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 token:
+ *                   type: string
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     role:
+ *                       type: string
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *       400:
+ *         description: Validation error or owner account already exists
+ *       403:
+ *         description: Email does not match the configured owner email
+ *       500:
+ *         description: Server error
+ *     security: []
+ */
 // @route   POST /api/auth/register
 // @desc    Register new user (only for owner account creation)
 // @access  Public (but only works for owner email)
@@ -177,6 +234,43 @@ router.post('/register', [
   }
 });
 
+/**
+ * @swagger
+ * /auth/me:
+ *   get:
+ *     summary: Get the currently authenticated user
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Current user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     role:
+ *                       type: string
+ *                       enum: [guest, admin, owner]
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                     lastLogin:
+ *                       type: string
+ *                       format: date-time
+ *       401:
+ *         description: Missing, invalid or expired token
+ *       500:
+ *         description: Server error
+ */
 // @route   GET /api/auth/me
 // @desc    Get current user info
 // @access  Private
@@ -197,6 +291,28 @@ router.get('/me', authenticateToken, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /auth/logout:
+ *   post:
+ *     summary: Log out the current user
+ *     description: Tokens are stateless, so this endpoint only confirms the client should discard the token.
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       401:
+ *         description: Missing, invalid or expired token
+ */
 // @route   POST /api/auth/logout
 // @desc    Logout user (client-side token removal)
 // @access  Private
@@ -204,6 +320,26 @@ router.post('/logout', authenticateToken, (req, res) => {
   res.json({ message: 'Logout successful' });
 });
 
+/**
+ * @swagger
+ * /auth/owner-exists:
+ *   get:
+ *     summary: Check whether the owner account has been created
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Owner existence flag
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 exists:
+ *                   type: boolean
+ *       500:
+ *         description: Server error
+ *     security: []
+ */
 // @route   GET /api/auth/owner-exists
 // @desc    Check if owner account exists
 // @access  Public
