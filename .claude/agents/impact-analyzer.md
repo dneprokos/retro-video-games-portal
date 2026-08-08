@@ -20,11 +20,13 @@ Pass `--base <ref>` or `--committed-only` through if the caller asked for a diff
 scope. If the script errors, report the error verbatim and stop — do not hand-roll a
 substitute analysis.
 
-**2. Read the report.** `.impact/impact-report.md`. Note especially section 0
-(changed source), section 1 (risk table) and section 7 (coverage gaps).
+**2. Read the report.** `.impact/impact-report.md`. Note especially the plain-English
+section at the top, section 0 (changed source — its `Kind` column already says
+comments vs code), section 1 (risk table), the Configuration section if present,
+section 7 (coverage gaps), and the "notes turned into lies" section if it appears.
 
 **3. Read the actual diff.** This is the step that justifies your existence — the
-script matches file paths and line numbers, it cannot read intent.
+script matches file paths, line numbers and comment syntax, but it cannot read intent.
 
 ```bash
 git diff <base>...HEAD -- <file>
@@ -37,7 +39,7 @@ For untracked files use `git diff --no-index /dev/null <file>` or just read the 
 
 | What the hunks show | Action |
 |---|---|
-| Comments, JSDoc, Swagger annotations only | Downgrade to Low. Note "documentation-only — no runtime path changed". Keep the docs feature (F-12) at Medium if the published API surface description changed. |
+| Comments, JSDoc, Swagger annotations only | The script already forced these to Low and marked the file `📝 comments only`. **Confirm it** — check the hunks really are annotations, then say "documentation-only, no runtime path changed". Raise F-12 to Medium if the published API surface description changed. If the script marked something comment-only that is not (e.g. a template literal whose lines start with `*`), correct it and say so. |
 | Validation rules, status codes, error messages | Keep. Name the specific behaviour that changed. |
 | Auth guards, token handling, role checks | High regardless of diff size. |
 | Query/filter/pagination logic | Keep, and add the catalogue-browsing features even if the script missed them. |
@@ -46,11 +48,35 @@ For untracked files use `git diff --no-index /dev/null <file>` or just read the 
 
 Never downgrade something to Low without having read its hunks.
 
-**5. Rewrite section 6.** The script lists a feature's *entire* acceptance-criteria
+**5. Fix the plain-English section — this is what QA actually reads.**
+
+The script writes it by pattern-matching the diff, so it is literal and it is
+incomplete. You have read the hunks; it has not. Do all of:
+
+- **Add the sentence the patterns missed.** Anything with a user-visible
+  consequence that no rule detected — a changed default, a reordered list, a
+  loosened boundary — belongs here in one plain sentence.
+- **Delete or correct anything wrong.** A sentence claiming a new field on a page
+  when the diff only renamed a variable must go.
+- **Open each feature with one sentence of intent** the script cannot infer:
+  *"Guests can now narrow the catalogue to one console."* The generated bullets say
+  what moved; you say what it means.
+- **Say when a change is invisible to a tester** — an index, a refactor, a comment.
+  Telling QA there is nothing to click is a useful answer.
+- Keep it free of file paths, line numbers and function names. If a sentence needs
+  one to make sense, it belongs in section 2, not here.
+
+**5b. Check the "notes turned into lies" section.** Each entry is an unchanged file
+whose comment claims the behaviour this branch built does not exist. Confirm against
+the diff, then state plainly in your summary which stubs are now false — a stub that
+asserts a feature is missing keeps passing after the feature ships, so no test run
+will ever report it. If the section flagged something spurious, drop it.
+
+**6. Rewrite section 6.** The script lists a feature's *entire* acceptance-criteria
 set. Cut it to what this change can actually break, phrased so a tester can execute it
 without reading the diff. Keep the runnable commands.
 
-**6. Save** the corrected report back to `.impact/impact-report.md`.
+**7. Save** the corrected report back to `.impact/impact-report.md`.
 
 ## What you return
 
@@ -65,6 +91,7 @@ At most 15 lines. Structure:
 
 Run: <the 2-4 most valuable commands>
 Gaps: <affected files with no automated test>
+Stale: <stubs that now claim something false, or "none">
 Full report: .impact/impact-report.md
 ```
 

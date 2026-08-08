@@ -28,6 +28,7 @@ Individual stages, if you need them:
 ```bash
 node .claude/skills/impact-analysis/scripts/build-map.js        # .impact/impact-map.json
 node .claude/skills/impact-analysis/scripts/collect-changes.js  # .impact/changes.json
+npm run impact:test                                             # the analyzer's own tests
 ```
 
 Everything under `.impact/` is generated and gitignored.
@@ -48,10 +49,78 @@ The requirement citations are what make this precise: a diff hunk that overlaps
 `server/models/Game.js:72-81` resolves to FR-01.5, which resolves to F-01, which
 resolves to the acceptance criteria and e2e specs that prove it.
 
+### Line numbers are compared in base coordinates
+
+Citations in `docs/requirements.md` are written against the **base** revision. A
+diff reports both sides, and the join uses the base side (`baseRanges`) — never
+the post-change side. Inserting 20 lines at the top of a file shifts everything
+below it, and comparing shifted numbers against unshifted citations reports every
+requirement under the insertion point as "directly changed". Section 0 still
+prints post-change ranges, because that is what you need to open the file.
+
+For the same reason `collect-changes.js` runs **one** diff (`git diff <base>`,
+spanning merge-base → working tree) rather than merging the committed, staged and
+unstaged diffs: those three number the same file against three different
+revisions, and unioning their ranges describes no revision at all. Where the edits
+live is reported separately, as the `origin` field.
+
+## Comment-only changes
+
+`collect-changes.js` classifies every touched line. A file whose hunks contain no
+executable line is marked `commentOnly` and is treated as an **annotation** hit:
+
+- it produces no direct or same-file requirement hit, only an `annotation` one
+- it does not propagate through the import graph or to client callers
+- any feature whose evidence is purely annotations is forced to **Low**
+- its endpoints show `📝 docs only` in section 3
+- if the whole branch is comment-only, the report opens with a banner saying so
+
+That covers the common Swagger/JSDoc-documentation branch automatically. It does not
+replace reading the diff — a `commentOnly` verdict is a strong hint, not proof.
+
+## The plain-English section
+
+The report opens with **What changed — in plain English**, written for a tester
+who does not read code. It is generated from the diff by pattern-matching the
+shapes that have a user-visible consequence:
+
+| Detected | Reported as |
+|---|---|
+| `router.<verb>('/path'` | a new or removed API endpoint |
+| `query('x')` / `body('x')` | the endpoint that line sits under accepts a new parameter |
+| `filter.x = …` | results can now be narrowed by `x` |
+| `.withMessage('…')` | a request can now be refused with that message |
+| `res.status(NNN)` | a new response path |
+| `<label>Text</label>` | a new field on the page that renders it |
+| `data-testid="x"` | a new control, when no label was touched |
+| `schema.index({ x: 1 })` | an index — speed, not results |
+| `it('…')` / `test('…')` | new automated checks, by name |
+
+Each sentence appears **once**, under the feature whose citation covers its line
+most precisely: tightest range wins, then the feature most invested in that file,
+then a whole-file citation, then the nearest citation within 60 lines. Past that
+it goes to "Not tied to a single feature" rather than being filed under a
+requirement it never touched.
+
+Intents are only extracted from runtime files. Tooling is skipped — left in, this
+skill's own `INTENT_RULES` source matches every rule it defines.
+
+## Notes this change may have turned into lies
+
+`build-map.js` collects every "not implemented yet" / "no-op" / "TODO" note in the
+source. The analyzer cross-checks them against the surface this branch actually
+built and flags any that sit in an **unchanged** file yet mention the new term.
+
+This is the one staleness class no test run can catch: a stub asserting a feature
+is missing keeps passing after the feature ships. Only surface-level intents
+(params, routes, labels, controls, indexes) contribute terms — test titles and
+error strings are too generic to prove a match.
+
 ## Your job after the script runs
 
-**The script cannot read intent.** It knows `server/routes/auth.js` changed; it does
-not know whether that was a Swagger comment block or the token expiry check. Always:
+**The script cannot read intent.** It knows `server/routes/auth.js` changed and whether
+the hunks were comments; it does not know whether a changed validation rule is a
+tightening or a loosening. Always:
 
 1. Read `.impact/impact-report.md`, section **0. Changed source** — that lists each
    changed file with its hunk ranges and the declarations touched.
@@ -72,23 +141,33 @@ coverage gaps. Do not paste the whole report — point at the file.
 
 | Section | Use |
 |---|---|
-| 0. Changed source | what to `git diff` before trusting anything below |
+| What changed — in plain English | the QA-facing summary; hand this to a non-technical reader |
+| 0. Changed source | what to `git diff` before trusting anything below; `Kind` column says comments vs code. Source only — config has its own section |
 | 1. Affected features | the headline — hand this to QA |
+| Configuration & environment | config files the requirement map cannot reach, with their known implications |
 | 2. Evidence | why each feature was flagged, per requirement ID |
 | 3. API surface | endpoints to re-test, with their guards and callers |
 | 4. Screens | user-visible URLs and the role needed to reach them |
 | 5. Blast radius | reverse imports, depth 2 |
 | 6. Checklist | commands first, then manual Given/When/Then |
 | 7. Coverage gaps | affected files with zero automated tests |
+| ⚠️ Notes turned into lies | unchanged stubs that claim the new behaviour does not exist |
 | 8. Downstream watch list | features declared dependent in requirements.md |
 
 ## Scoring
 
-`3×direct + 2×same-file + 1×indirect`, then `×2` if authorization code changed and
-`×1.5` if affected files have no test. High ≥ 8, Medium ≥ 3, else Low. A direct hit
-combined with an auth change is always High.
+`3×direct + 2×same-file + 1×indirect + 0.5×annotation`, then `×2` if authorization code
+changed and `×1.5` if affected files have no test. High ≥ 8, Medium ≥ 3, else Low.
+A direct hit combined with an auth change is always High; annotation-only evidence is
+always Low.
 
 Full rule table: `references/report-template.md`.
+
+## Tests
+
+`npm run impact:test` — 42 tests on the Node built-in runner, no dependency. They run
+against synthetic map/diff fixtures rather than the live repo, so they stay valid as
+the application changes. Add a case whenever you touch a propagation rule.
 
 ## Troubleshooting
 
@@ -105,3 +184,16 @@ a citation added for it. Say so in the report rather than silently reporting no 
 
 **Report flags everything** — check whether the diff base is right. On a branch far
 behind `main`, `--base origin/main` gives a cleaner merge-base.
+
+**A requirement is flagged that the diff plainly never touched** — the citation in
+`docs/requirements.md` is stale relative to the base revision. The base-coordinate
+join corrects for the branch's own line shifts, not for citations that were already
+wrong before the branch started. Fix the citation.
+
+**The plain-English section says nothing about a real change** — no `INTENT_RULES`
+pattern matched it. That is a gap in the rules, not proof the change is invisible;
+describe it yourself and consider adding a rule.
+
+**`--staged` scope** — the staged diff numbers files against `HEAD`, not the
+merge-base, so requirement attribution is only exact when `HEAD` is the base. The
+default scope has no such caveat.
