@@ -15,8 +15,8 @@ const test = require('node:test');
 const assert = require('node:assert');
 
 const lib = require('./lib');
-const { parseDiff, normalizeRanges, resolveBase } = require('./collect-changes');
-const { propagate, score, e2eForFeature, render } = require('./analyze');
+const { parseDiff, normalizeRanges, resolveBase, lineIntents, reconcileIntents } = require('./collect-changes');
+const { propagate, score, e2eForFeature, render, plainLines, locationOf, attributeIntents } = require('./analyze');
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -32,6 +32,27 @@ const COMMENT_ONLY_DIFF = `diff --git a/server/routes/auth.js b/server/routes/au
 + * /api/auth/login:
 + *   post:
 + */
+`;
+
+/**
+ * A pure insertion of 20 lines just above a requirement's cited range.
+ * Post-change the inserted block sits at 56-75, straight through the citation
+ * at 60-70 — but in base coordinates it occupies nothing inside it.
+ */
+const INSERTION_DIFF = `diff --git a/server/routes/auth.js b/server/routes/auth.js
+--- a/server/routes/auth.js
++++ b/server/routes/auth.js
+@@ -55,0 +56,20 @@
+${Array.from({ length: 20 }, (_, i) => `+  const inserted${i} = ${i};`).join('\n')}
+`;
+
+/** A diff that adds a query parameter, a message, a control and a test. */
+const FEATURE_DIFF = `diff --git a/server/routes/auth.js b/server/routes/auth.js
+--- a/server/routes/auth.js
++++ b/server/routes/auth.js
+@@ -62,0 +63,2 @@
++  query('platform').optional().custom((v) => true).withMessage('Invalid platform selected'),
++  gameSchema.index({ platforms: 1 });
 `;
 
 /** A diff that moves real logic. */
@@ -77,8 +98,21 @@ function fixtureMap() {
       },
       'client/src/pages/Login.js': { features: ['F-02'], frs: [], acceptance: [] },
     },
-    imports: { 'server/routes/auth.js': ['server/middleware/auth.js'], 'client/src/pages/Login.js': [] },
-    importedBy: { 'server/middleware/auth.js': ['server/routes/auth.js'] },
+    imports: {
+      'server/routes/auth.js': ['server/middleware/auth.js'],
+      'client/src/pages/Login.js': [],
+      // server.js mounts the auth router; that is not a behavioural dependency.
+      'server/server.js': ['server/routes/auth.js'],
+    },
+    importedBy: {
+      'server/middleware/auth.js': ['server/routes/auth.js'],
+      'server/routes/auth.js': ['server/server.js'],
+      'client/src/components/LoginForm.js': ['client/src/pages/Login.js'],
+    },
+    staleMarkers: [
+      { file: 'e2e/tests/pages/LoginPage.js', line: 81, text: 'Note: platform filter is not implemented in the UI' },
+      { file: 'e2e/tests/utils/api-client.js', line: 12, text: 'TODO: rewrite this helper' },
+    ],
     endpoints: [
       {
         method: 'POST', path: '/api/auth/login', key: 'POST /api/auth/login',
@@ -88,6 +122,11 @@ function fixtureMap() {
       {
         method: 'GET', path: '/api/auth/me', key: 'GET /api/auth/me',
         file: 'server/routes/auth.js', line: 200, guards: ['authenticateToken'], public: false,
+        consumers: [], uiReachable: false,
+      },
+      {
+        method: 'GET', path: '/api/health', key: 'GET /api/health',
+        file: 'server/server.js', line: 90, guards: [], public: true,
         consumers: [], uiReachable: false,
       },
     ],
@@ -131,7 +170,7 @@ function changed(p, over = {}) {
     path: p, previousPath: null, status: 'M', origin: 'committed',
     added: 5, removed: 0, ranges: [[60, 70]], binary: false,
     codeLines: 5, commentLines: 0, symbols: [], category: 'code',
-    runtime: true, commentOnly: false, ...over,
+    runtime: true, commentOnly: false, intents: [], ...over,
   };
 }
 
@@ -209,6 +248,57 @@ test('normalizeRanges merges overlapping and adjacent spans', () => {
   assert.deepStrictEqual(normalizeRanges([]), []);
 });
 
+test('parseDiff records base-side ranges alongside post-change ranges', () => {
+  const record = parseDiff(INSERTION_DIFF, 'committed').get('server/routes/auth.js');
+  assert.deepStrictEqual(record.ranges, [[56, 75]], 'post-change: the inserted block');
+  assert.deepStrictEqual(record.baseRanges, [[55, 56]], 'base-side: the seam it was inserted into');
+});
+
+test('parseDiff maps a modification hunk onto its base lines', () => {
+  const record = parseDiff(BEHAVIOUR_DIFF, 'committed').get('server/middleware/auth.js');
+  assert.deepStrictEqual(record.baseRanges, [[20, 20]]);
+  assert.deepStrictEqual(record.ranges, [[20, 21]]);
+});
+
+test('lineIntents names the surface a line introduces', () => {
+  assert.deepStrictEqual(
+    lineIntents("  query('platform').optional(),", 'added', { line: 55, baseLine: 54 }),
+    [{ kind: 'api-param', action: 'added', value: 'platform query', line: 55, baseLine: 54 }]
+  );
+  assert.deepStrictEqual(
+    lineIntents("  .withMessage('Invalid platform selected'),", 'added').map((i) => i.value),
+    ['Invalid platform selected']
+  );
+  assert.deepStrictEqual(
+    lineIntents('  <label className="x">Platform</label>', 'added').map((i) => i.kind),
+    ['ui-label']
+  );
+  assert.deepStrictEqual(
+    lineIntents("  router.get('/filters/options', handler);", 'added').map((i) => i.value),
+    ['GET /filters/options']
+  );
+  assert.deepStrictEqual(
+    lineIntents('  gameSchema.index({ platforms: 1 });', 'added').map((i) => i.value),
+    ['platforms']
+  );
+  assert.deepStrictEqual(
+    lineIntents('      filter.platforms = platform;', 'added').map((i) => `${i.kind}:${i.value}`),
+    ['data-filter:platforms']
+  );
+  assert.deepStrictEqual(lineIntents('  const x = 1;', 'added'), []);
+  assert.deepStrictEqual(lineIntents('  if (filter.genre === x) {', 'added'), [], 'a comparison is not an assignment');
+});
+
+test('reconcileIntents downgrades a value touched on both sides to "changed"', () => {
+  const reconciled = reconcileIntents([
+    { kind: 'api-param', action: 'removed', value: 'genre query' },
+    { kind: 'api-param', action: 'added', value: 'genre query' },
+    { kind: 'api-param', action: 'added', value: 'platform query' },
+  ]);
+  assert.strictEqual(reconciled.find((i) => i.value === 'genre query').action, 'changed');
+  assert.strictEqual(reconciled.find((i) => i.value === 'platform query').action, 'added');
+});
+
 test('resolveBase falls back through the core branch candidates', () => {
   const base = resolveBase(null);
   assert.ok(base.ref, 'a base ref is always resolved');
@@ -232,6 +322,28 @@ test('a hunk elsewhere in a cited file is a weaker same-file hit', () => {
   const f02 = hits.get('F-02');
   assert.strictEqual(f02.direct.size, 0);
   assert.ok(f02.likely.has('server/routes/auth.js'));
+});
+
+test('an insertion below a citation is not a direct hit, despite the line shift', () => {
+  // Post-change the inserted block spans 56-75, straight over the 60-70
+  // citation. In base coordinates it touched nothing inside it.
+  const change = changed('server/routes/auth.js', { ranges: [[56, 75]], baseRanges: [[55, 56]] });
+  const { hits } = propagate(fixtureMap(), fixtureChanges([change]));
+  const f02 = hits.get('F-02');
+  assert.strictEqual(f02.direct.size, 0, 'shifted lines must not read as a direct hit');
+  assert.ok(f02.likely.has('server/routes/auth.js'), 'still same-file evidence');
+});
+
+test('base ranges that genuinely overlap a citation stay a direct hit', () => {
+  const change = changed('server/routes/auth.js', { ranges: [[62, 64]], baseRanges: [[62, 64]] });
+  const { hits } = propagate(fixtureMap(), fixtureChanges([change]));
+  assert.ok(hits.get('F-02').direct.has('server/routes/auth.js'));
+});
+
+test('mounting a changed router does not drag in unrelated endpoints', () => {
+  const { endpointHits } = propagate(fixtureMap(), fixtureChanges([changed('server/routes/auth.js')]));
+  assert.ok(endpointHits.has('POST /api/auth/login'), 'the router own endpoints are in scope');
+  assert.ok(!endpointHits.has('GET /api/health'), 'server.js mounting the router is not a dependency');
 });
 
 test('a comment-only change produces an annotation hit, never a direct one', () => {
@@ -339,6 +451,128 @@ test('config changes are reported even when no feature is hit', () => {
   const report = render(map, changes, score(hits, map, authTouched), endpointHits, screenHits, blast, authTouched);
   assert.match(report, /## Configuration & environment/);
   assert.match(report, /Reverse-proxy routing changed/);
+});
+
+test('locationOf answers in places a tester can visit', () => {
+  const map = fixtureMap();
+  assert.match(locationOf('client/src/pages/Login.js', map), /`\/login` page/);
+  assert.strictEqual(locationOf('server/routes/auth.js', map), 'the API');
+  assert.strictEqual(locationOf('server/models/Game.js', map), 'the stored data');
+  assert.strictEqual(locationOf('e2e/tests/auth.spec.js', map), 'the automated test suite');
+});
+
+test('plainLines describes a new query parameter without naming a line number', () => {
+  const map = fixtureMap();
+  const intents = [
+    { kind: 'api-param', action: 'added', value: 'platform query', line: 66, baseLine: 66 },
+    { kind: 'message', action: 'added', value: 'Invalid platform selected', line: 66, baseLine: 66 },
+  ];
+  const change = changed('server/routes/auth.js', { intents });
+  const { endpointHits } = propagate(map, fixtureChanges([change]));
+  const lines = plainLines('server/routes/auth.js', intents, map, endpointHits);
+  assert.ok(lines.some((l) => /accepts a new filter\/parameter: \*\*platform\*\*/.test(l)));
+  assert.ok(lines.some((l) => /refused with the message “Invalid platform selected”/.test(l)));
+  assert.ok(!lines.some((l) => /\d{2,}/.test(l)), 'no raw line numbers leak into the QA summary');
+});
+
+test('an api-param is credited to the route it sits under, not every route in the file', () => {
+  const map = fixtureMap();
+  // Line 66 is inside POST /api/auth/login (declared at 65), well before
+  // GET /api/auth/me (declared at 200).
+  const intents = [{ kind: 'api-param', action: 'added', value: 'platform query', line: 66, baseLine: 66 }];
+  const { endpointHits } = propagate(map, fixtureChanges([changed('server/routes/auth.js', { intents })]));
+  const lines = plainLines('server/routes/auth.js', intents, map, endpointHits);
+  assert.ok(lines[0].includes('POST /api/auth/login'));
+  assert.ok(!lines[0].includes('GET /api/auth/me'), 'unrelated routes in the same file stay out of it');
+});
+
+test('attributeIntents gives a line to the requirement that cites it', () => {
+  const map = fixtureMap();
+  map.fileIndex['server/routes/auth.js'].frs.push({ featureId: 'F-04', frId: 'FR-04.9', text: 'other', ranges: [[300, 320]] });
+  const intents = [
+    { kind: 'api-param', action: 'added', value: 'platform query', line: 65, baseLine: 65 },
+    { kind: 'api-param', action: 'added', value: 'token query', line: 310, baseLine: 310 },
+  ];
+  const owners = attributeIntents('server/routes/auth.js', intents, map, new Set(['F-02', 'F-04']));
+  assert.deepStrictEqual(owners.get('F-02').map((i) => i.value), ['platform query'], 'inside FR-02.1 60-70');
+  assert.deepStrictEqual(owners.get('F-04').map((i) => i.value), ['token query'], 'inside FR-04.9 300-320');
+});
+
+test('the tightest citation owns a line two requirements both cover', () => {
+  const map = fixtureMap();
+  // F-02 cites the whole block; F-04 cites the four lines that do the work.
+  map.fileIndex['server/routes/auth.js'].frs.push({ featureId: 'F-04', frId: 'FR-04.9', text: 'narrow', ranges: [[64, 67]] });
+  const intents = [{ kind: 'data-filter', action: 'added', value: 'platforms', line: 65, baseLine: 65 }];
+  const owners = attributeIntents('server/routes/auth.js', intents, map, new Set(['F-02', 'F-04']));
+  assert.ok(owners.has('F-04'), 'the specific citation wins');
+  assert.ok(!owners.has('F-02'), 'the 11-line citation does not also claim it');
+});
+
+test('an exact citation tie goes to the feature most invested in the file', () => {
+  const map = fixtureMap();
+  const frs = map.fileIndex['server/routes/auth.js'].frs;
+  // Identical range, cited by both — F-04 cites this file three times over.
+  frs.push({ featureId: 'F-04', frId: 'FR-04.7', text: 'a', ranges: [[60, 70]] });
+  frs.push({ featureId: 'F-04', frId: 'FR-04.8', text: 'b', ranges: [[80, 90]] });
+  const intents = [{ kind: 'data-filter', action: 'added', value: 'platforms', line: 65, baseLine: 65 }];
+  const owners = attributeIntents('server/routes/auth.js', intents, map, new Set(['F-02', 'F-04']));
+  assert.ok(owners.has('F-04'));
+  assert.ok(!owners.has('F-02'), 'the less-invested feature does not double-report it');
+});
+
+test('an unowned line goes to the nearest citation, not the first feature', () => {
+  const map = fixtureMap();
+  map.fileIndex['server/routes/auth.js'].frs.push({ featureId: 'F-04', frId: 'FR-04.9', text: 'other', ranges: [[300, 320]] });
+  const intents = [{ kind: 'ui-label', action: 'added', value: 'Platform', line: 295, baseLine: 295 }];
+  const owners = attributeIntents('server/routes/auth.js', intents, map, new Set(['F-02', 'F-04']));
+  assert.ok(!owners.has('F-02'), 'the far-away citation does not claim it');
+  assert.deepStrictEqual(owners.get('F-04').map((i) => i.value), ['Platform']);
+});
+
+test('the report opens with a plain-English section grouped by feature', () => {
+  const map = fixtureMap();
+  const changes = fixtureChanges([
+    changed('server/routes/auth.js', {
+      ranges: [[62, 64]],
+      baseRanges: [[62, 64]],
+      intents: [{ kind: 'api-param', action: 'added', value: 'platform query', line: 66, baseLine: 66 }],
+    }),
+  ]);
+  const { hits, endpointHits, screenHits, blast, authTouched } = propagate(map, changes);
+  const report = render(map, changes, score(hits, map, authTouched), endpointHits, screenHits, blast, authTouched);
+  assert.match(report, /## What changed — in plain English/);
+  assert.match(report, /F-02 Authentication/);
+  assert.ok(
+    report.indexOf('in plain English') < report.indexOf('## 0. Changed source'),
+    'QA reads before the technical detail'
+  );
+});
+
+test('a stub claiming the new behaviour is missing gets flagged', () => {
+  const map = fixtureMap();
+  const changes = fixtureChanges([
+    changed('server/routes/auth.js', {
+      intents: [{ kind: 'api-param', action: 'added', value: 'platform query', line: 66, baseLine: 66 }],
+    }),
+  ]);
+  const { hits, endpointHits, screenHits, blast, authTouched } = propagate(map, changes);
+  const report = render(map, changes, score(hits, map, authTouched), endpointHits, screenHits, blast, authTouched);
+  assert.match(report, /turned into lies/);
+  assert.match(report, /e2e\/tests\/pages\/LoginPage\.js:81/);
+  assert.ok(!report.includes('api-client.js:12'), 'an unrelated TODO is not dragged in');
+});
+
+test('config files are described once, not listed as changed source', () => {
+  const map = fixtureMap();
+  const changes = fixtureChanges([
+    changed('server/routes/auth.js', { ranges: [[62, 64]], baseRanges: [[62, 64]] }),
+    changed('package.json', { category: 'config', ranges: [[13, 14]], baseRanges: [[13, 14]] }),
+  ]);
+  const { hits, endpointHits, screenHits, blast, authTouched } = propagate(map, changes);
+  const report = render(map, changes, score(hits, map, authTouched), endpointHits, screenHits, blast, authTouched);
+  const section0 = report.slice(report.indexOf('## 0. Changed source'), report.indexOf('## 1. Affected features'));
+  assert.ok(!section0.includes('package.json'), 'config does not masquerade as source');
+  assert.match(report, /## Configuration & environment[\s\S]*package\.json/);
 });
 
 test('an unmatched source file is named rather than silently dropped', () => {

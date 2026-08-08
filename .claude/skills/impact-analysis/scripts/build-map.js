@@ -449,6 +449,35 @@ function buildTests(files, imports) {
   return { unitTests, testedBy, specs, helperEndpoints, coverageGaps };
 }
 
+/**
+ * Notes in the source that claim something does not exist yet.
+ *
+ * A test or page object saying "platform filter is not implemented" is correct
+ * right up until someone implements it, and then it is a lie that no test run
+ * will ever catch — the stub still passes. Collecting the claims here lets the
+ * analyzer cross-check them against what the branch actually built.
+ *
+ * @param {string[]} files
+ * @returns {Array<{file: string, line: number, text: string}>}
+ */
+const STALE_MARKER_RE = /\b(not\s+(?:yet\s+)?implemented|not\s+implemented\s+yet|no-?op|placeholder|would\s+need\s+to\s+be\s+implemented|TODO|FIXME)\b/i;
+
+function buildStaleMarkers(files) {
+  const out = [];
+  for (const file of files) {
+    const src = read(file);
+    if (!src) continue;
+    src.split(/\r?\n/).forEach((line, i) => {
+      if (out.length >= 200) return;
+      if (!STALE_MARKER_RE.test(line)) return;
+      // Only prose carries a claim; a variable named `todoCount` does not.
+      if (!/(\/\/|\/\*|\*|['"`])/.test(line)) return;
+      out.push({ file, line: i + 1, text: line.trim().replace(/^[/*\s]+/, '').slice(0, 160) });
+    });
+  }
+  return out;
+}
+
 // ---------------------------------------------------------------------------
 // Assemble
 // ---------------------------------------------------------------------------
@@ -463,6 +492,7 @@ function main() {
   const screens = buildScreens(imports);
   const apiConsumers = buildApiConsumers();
   const tests = buildTests(files, imports);
+  const staleMarkers = buildStaleMarkers(files);
 
   // Endpoints the UI never calls are API-only surface; useful signal for QA.
   const consumedKeys = new Set(Object.keys(apiConsumers));
@@ -481,6 +511,7 @@ function main() {
         unitTests: tests.unitTests.length,
         e2eSpecs: tests.specs.length,
         coverageGaps: tests.coverageGaps.length,
+        staleMarkers: staleMarkers.length,
       },
       unresolvedCitations: requirements.unresolved,
     },
@@ -493,6 +524,7 @@ function main() {
     screens,
     apiConsumers,
     tests,
+    staleMarkers,
   };
 
   const out = writeArtifact('impact-map.json', map);

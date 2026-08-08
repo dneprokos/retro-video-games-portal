@@ -58,6 +58,9 @@ const WEIGHT = { direct: 3, likely: 2, indirect: 1, annotation: 0.5 };
 /** Most manual acceptance criteria to list per feature before linking out. */
 const MANUAL_CAP = 8;
 
+/** How far from a citation a change can sit and still be credited to it. */
+const NEAR_CITATION_LINES = 60;
+
 // ---------------------------------------------------------------------------
 // Input refresh
 // ---------------------------------------------------------------------------
@@ -132,7 +135,11 @@ function propagate(map, changes) {
         continue;
       }
 
-      const overlaps = change.status === 'A' || rangesOverlap(change.ranges, fr.ranges);
+      // Citations are written against the base revision, so the comparison has
+      // to happen in base coordinates. Using the post-change ranges makes every
+      // requirement below an insertion point look directly changed.
+      const citationRanges = change.baseRanges && change.baseRanges.length ? change.baseRanges : change.ranges;
+      const overlaps = change.status === 'A' || rangesOverlap(citationRanges, fr.ranges);
       (overlaps ? h.direct : h.likely).add(change.path);
       note(h, overlaps
         ? `${fr.frId} is implemented in the changed lines of \`${change.path}\``
@@ -199,6 +206,12 @@ function propagate(map, changes) {
 
   const authTouched = AUTH_FILES.some((f) => changedPaths.has(f));
 
+  // Route modules that declare their own endpoints. server.js imports every one
+  // of them to mount it, which is not a behavioural dependency: changing the
+  // games router does not change what `GET /api/health` returns. Those routers'
+  // own endpoints are already flagged by rule 4.
+  const endpointFiles = new Set(map.endpoints.map((e) => e.file));
+
   for (const endpoint of map.endpoints) {
     const change = byPath.get(endpoint.file);
     if (change) {
@@ -212,7 +225,7 @@ function propagate(map, changes) {
     } else {
       // Rule 5: a module the route depends on moved.
       const deps = (map.imports[endpoint.file] || []).filter(
-        (d) => changedPaths.has(d) && !byPath.get(d).commentOnly
+        (d) => changedPaths.has(d) && !byPath.get(d).commentOnly && !endpointFiles.has(d)
       );
       if (deps.length) flagEndpoint(endpoint, `depends on changed \`${deps.join('`, `')}\``, false);
     }
@@ -489,13 +502,19 @@ function render(map, changes, scored, endpointHits, screenHits, blast, authTouch
       );
     }
     L.push('');
+    appendPlainEnglish(L, map, changes, scored, endpointHits);
     appendConfig(L, changes);
+    appendStaleMarkers(L, map, changes);
     appendIgnored(L, changes);
     return `${L.join('\n')}\n`;
   }
 
-  // 0. What actually changed
-  const changedCode = changes.files.filter((f) => f.runtime && f.status !== 'D');
+  appendPlainEnglish(L, map, changes, scored, endpointHits);
+
+  // 0. What actually changed. Config is runtime-relevant but is not source: it
+  // has its own section, and a .json file has no comment syntax for the Kind
+  // column to reason about.
+  const changedCode = changes.files.filter((f) => f.category === 'code' && f.status !== 'D');
   const behavioural = changedCode.filter((f) => !f.commentOnly);
   if (changedCode.length && !behavioural.length) {
     L.push('> 📝 **Every runtime file on this branch changed comments only.** No executable line moved.');
@@ -668,6 +687,8 @@ function render(map, changes, scored, endpointHits, screenHits, blast, authTouch
     L.push('');
   }
 
+  appendStaleMarkers(L, map, changes);
+
   // 8. Watch list from feature dependencies
   const affected = new Set(scored.map((s) => s.id));
   const downstream = Object.values(map.features)
@@ -684,6 +705,340 @@ function render(map, changes, scored, endpointHits, screenHits, blast, authTouch
 
   appendIgnored(L, changes);
   return `${L.join('\n')}\n`;
+}
+
+/**
+ * Describe where a changed file surfaces, in terms a tester can act on.
+ * @param {string} file
+ * @param {object} map
+ * @returns {string}
+ */
+function locationOf(file, map) {
+  const screen = map.screens.find((s) => s.file === file);
+  if (screen) return `the \`${screen.url}\` page (${screen.component || path.basename(file)})`;
+
+  // A shared component has no URL of its own — name the pages that render it.
+  const owners = (map.importedBy[file] || [])
+    .map((importer) => map.screens.find((s) => s.file === importer))
+    .filter(Boolean);
+  if (owners.length) {
+    return `the ${owners.map((s) => `\`${s.url}\``).join(' and ')} page${owners.length > 1 ? 's' : ''}`;
+  }
+
+  if (/\.test\.jsx?$|\.spec\.js$/.test(file)) return 'the automated test suite';
+  if (/^server\/routes\//.test(file)) return 'the API';
+  if (/^server\/models\//.test(file)) return 'the stored data';
+  if (/^server\/middleware\//.test(file)) return 'every request the server handles';
+  return `\`${file}\``;
+}
+
+/**
+ * Turn one file's diff intents into sentences a non-technical reader can use.
+ *
+ * Everything here is derived from the diff, so it can say *what* moved but
+ * never *why*. The agent reading this report is expected to confirm each line
+ * against the actual hunks.
+ *
+ * @param {string} file
+ * @param {object} change changed-file record carrying `intents`
+ * @param {object} map
+ * @param {Map<string, object>} endpointHits
+ * @returns {string[]}
+ */
+function plainLines(file, intents, map, endpointHits) {
+  const out = [];
+  const where = locationOf(file, map);
+  const byKind = (k) => intents.filter((i) => i.kind === k);
+
+  const declared = map.endpoints.filter((e) => e.file === file).sort((a, b) => a.line - b.line);
+  /**
+   * The route a given line sits under — nearest preceding declaration, the same
+   * heuristic the symbol scanner uses. Naming every endpoint in the file
+   * instead produces claims like "DELETE /api/games/:p accepts a new filter".
+   * @param {number} line
+   * @returns {string}
+   */
+  const apiAt = (line) => {
+    const owner = [...declared].reverse().find((e) => e.line <= line);
+    const pick = owner || declared.find((e) => endpointHits.has(e.key)) || declared[0];
+    return pick ? `\`${pick.key}\`` : 'The API';
+  };
+
+  for (const i of byKind('route')) {
+    out.push(i.action === 'removed'
+      ? `An API endpoint was **removed**: \`${i.value}\`.`
+      : `A new API endpoint was added: \`${i.value}\`.`);
+  }
+
+  for (const i of byKind('api-param')) {
+    const [name, surface] = i.value.split(' ');
+    const noun = surface === 'query' ? 'filter/parameter' : 'field in the request body';
+    const subject = apiAt(i.line);
+    if (i.action === 'added') out.push(`${subject} accepts a new ${noun}: **${name}**.`);
+    else if (i.action === 'removed') out.push(`${subject} no longer accepts the ${noun} **${name}**.`);
+    else out.push(`The rules for the ${noun} **${name}** on ${subject} changed.`);
+  }
+
+  for (const i of byKind('data-filter')) {
+    if (i.action === 'added') out.push(`Results can now be narrowed by **${i.value}** — expect fewer rows back when it is set.`);
+    else if (i.action === 'removed') out.push(`Results are no longer narrowed by **${i.value}** — expect more rows back.`);
+    else out.push(`How results are narrowed by **${i.value}** changed.`);
+  }
+
+  for (const i of byKind('message')) {
+    if (i.action === 'added') out.push(`A request can now be refused with the message “${i.value}”.`);
+    else if (i.action === 'removed') out.push(`The refusal message “${i.value}” is gone.`);
+  }
+
+  for (const i of byKind('status')) {
+    if (i.action === 'added' && !/\.test\.jsx?$|\.spec\.js$/.test(file)) {
+      out.push(`A new HTTP **${i.value}** response path exists on ${where}.`);
+    }
+  }
+
+  const labels = byKind('ui-label');
+  for (const i of labels) {
+    if (i.action === 'added') out.push(`A new field labelled **“${i.value}”** appears on ${where}.`);
+    else if (i.action === 'removed') out.push(`The field labelled **“${i.value}”** was removed from ${where}.`);
+    else out.push(`The field labelled **“${i.value}”** on ${where} changed.`);
+  }
+  // Only fall back to test ids when no human-readable label was touched.
+  if (!labels.length) {
+    for (const i of byKind('ui-control')) {
+      if (i.action === 'added') out.push(`A new control (\`${i.value}\`) appears on ${where}.`);
+      else if (i.action === 'removed') out.push(`A control (\`${i.value}\`) was removed from ${where}.`);
+    }
+  }
+
+  for (const i of byKind('db-index')) {
+    if (i.action === 'added') out.push(`A database index was added on **${i.value}** — affects speed, not results.`);
+  }
+
+  const added = byKind('test').filter((i) => i.action === 'added');
+  if (added.length) {
+    const shown = added.slice(0, 3).map((i) => `“${i.value}”`).join(', ');
+    out.push(`${added.length} new automated check${added.length > 1 ? 's' : ''}: ${shown}${added.length > 3 ? ', …' : ''}.`);
+  }
+  const gone = byKind('test').filter((i) => i.action === 'removed');
+  if (gone.length) {
+    out.push(`${gone.length} automated check${gone.length > 1 ? 's were' : ' was'} renamed or deleted — confirm nothing lost coverage.`);
+  }
+
+  return out;
+}
+
+/**
+ * Decide which feature owns each intent in a file.
+ *
+ * A busy file like `server/routes/games.js` carries requirements from eight
+ * features. Attributing every intent to all of them repeats the same three
+ * sentences eight times and tells QA nothing. Line numbers settle it: the
+ * requirement whose cited range contains the touched line owns it, and an
+ * unowned line goes to the nearest citation rather than to whichever feature
+ * happened to sort first.
+ *
+ * @param {string} file
+ * @param {object[]} intents
+ * @param {object} map
+ * @param {Set<string>} candidates feature ids that are actually in scope
+ * @returns {Map<string|null, object[]>}
+ */
+function attributeIntents(file, intents, map, candidates) {
+  const frs = ((map.fileIndex[file] || {}).frs || []).filter((fr) => candidates.has(fr.featureId));
+  // How much of this file each feature claims. Used only to break exact ties:
+  // when two requirements cite the identical range, the feature that cites the
+  // file seven times is the better home than the one that cites it twice.
+  const invested = new Map();
+  frs.forEach((fr) => fr.ranges.forEach(() => invested.set(fr.featureId, (invested.get(fr.featureId) || 0) + 1)));
+
+  /** @type {Map<string|null, object[]>} */
+  const out = new Map();
+  const add = (id, intent) => {
+    if (!out.has(id)) out.set(id, []);
+    out.get(id).push(intent);
+  };
+
+  // A citation with no line range claims the whole file. It is a real claim,
+  // just the least precise one, so it ranks below any range that contains the
+  // line and above a guess based on distance.
+  const wholeFile = [...new Set(frs.filter((fr) => !fr.ranges.length).map((fr) => fr.featureId))]
+    .sort((a, b) => (invested.get(b) || 0) - (invested.get(a) || 0));
+
+  for (const intent of intents) {
+    const line = intent.baseLine || intent.line || 0;
+    if (!frs.length) { add(null, intent); continue; }
+
+    // Several requirements can cite the same line at different resolutions:
+    // FR-07.3 cites the four lines that build the genre filter, FR-06.7 cites
+    // the whole 28-line filter block. The tighter citation is the more specific
+    // claim, so it owns the line — otherwise the widest net always wins and
+    // "search" gets credited with a filtering change.
+    const containing = frs
+      .flatMap((fr) => fr.ranges.filter(([a, b]) => line >= a && line <= b).map(([a, b]) => ({ fr, width: b - a })))
+      .sort((x, y) => x.width - y.width
+        || (invested.get(y.fr.featureId) || 0) - (invested.get(x.fr.featureId) || 0));
+    if (containing.length) {
+      const best = containing[0];
+      const bestInvested = invested.get(best.fr.featureId) || 0;
+      [...new Set(
+        containing
+          .filter((c) => c.width === best.width && (invested.get(c.fr.featureId) || 0) === bestInvested)
+          .map((c) => c.fr.featureId)
+      )].forEach((id) => add(id, intent));
+      continue;
+    }
+
+    if (wholeFile.length) { add(wholeFile[0], intent); continue; }
+
+    let best = null;
+    let bestDistance = Infinity;
+    for (const fr of frs) {
+      for (const [a, b] of fr.ranges) {
+        const distance = line < a ? a - line : line > b ? line - b : 0;
+        if (distance < bestDistance) { bestDistance = distance; best = fr.featureId; }
+      }
+    }
+    // Beyond this, "nearest" stops meaning "related". Better to leave the
+    // change unattributed than to file it under a requirement it never touched.
+    add(bestDistance <= NEAR_CITATION_LINES ? best : null, intent);
+  }
+  return out;
+}
+
+/**
+ * Append the plain-language summary, grouped by the feature each change serves.
+ * @param {string[]} L
+ * @param {object} map
+ * @param {object} changes
+ * @param {object[]} scored
+ * @param {Map<string, object>} endpointHits
+ */
+function appendPlainEnglish(L, map, changes, scored, endpointHits) {
+  const withIntents = new Map(
+    changes.files.filter((f) => (f.intents || []).length && f.status !== 'D').map((f) => [f.path, f])
+  );
+  if (!withIntents.size) return;
+
+  const candidates = new Set(scored.map((s) => s.id));
+  // file → featureId → intents
+  const attributed = new Map();
+  for (const [file, change] of withIntents) {
+    attributed.set(file, attributeIntents(file, change.intents, map, candidates));
+  }
+
+  const body = [];
+  const seen = new Set();
+  const claimedFiles = new Set();
+
+  for (const entry of scored) {
+    const own = [...new Set([...entry.direct, ...entry.likely])].filter((f) => withIntents.has(f));
+    const sentences = [];
+    for (const file of own) {
+      const mine = attributed.get(file).get(entry.id) || [];
+      if (!mine.length) continue;
+      for (const sentence of plainLines(file, mine, map, endpointHits)) {
+        if (seen.has(sentence)) continue;
+        seen.add(sentence);
+        sentences.push(sentence);
+      }
+      claimedFiles.add(file);
+    }
+    if (!sentences.length) continue;
+    body.push(`### ${BADGE[entry.level]} · ${entry.id} ${entry.title}`);
+    body.push('');
+    sentences.forEach((s) => body.push(`- ${s}`));
+    body.push('');
+  }
+
+  // Anything no in-scope feature claimed: unowned files, plus intents whose
+  // line fell outside every citation in a file nobody took.
+  const leftovers = [];
+  for (const [file, change] of withIntents) {
+    const owners = attributed.get(file);
+    const unowned = owners.get(null) || [];
+    const pool = claimedFiles.has(file) ? unowned : change.intents;
+    for (const sentence of plainLines(file, pool, map, endpointHits)) {
+      if (seen.has(sentence)) continue;
+      seen.add(sentence);
+      leftovers.push(sentence);
+    }
+  }
+  if (leftovers.length) {
+    body.push('### Not tied to a single feature');
+    body.push('');
+    leftovers.forEach((s) => body.push(`- ${s}`));
+    body.push('');
+  }
+
+  if (!body.length) return;
+  L.push('## What changed — in plain English');
+  L.push('');
+  L.push('_For QA. Read from the diff, so it states what moved, not why it moved._');
+  L.push('');
+  L.push(
+    '_Each change is listed once, under the requirement whose citation covers it most precisely. ' +
+      'A single change usually touches more features than its heading names — section 1 has the full list._'
+  );
+  L.push('');
+  L.push(...body);
+}
+
+/** Intent kinds that describe shipped surface, not test prose. */
+const SURFACE_KINDS = new Set(['api-param', 'route', 'ui-label', 'ui-control', 'db-index']);
+
+/** Words too generic to prove a note is about this change. */
+const TERM_STOPLIST = new Set(['query', 'param', 'params', 'value', 'field', 'index', 'router', 'delete', 'patch']);
+
+/**
+ * Cross-check "not implemented yet" notes against what this branch built.
+ *
+ * A stub that says a feature is missing keeps passing after the feature ships;
+ * no test run will ever flag it. This is the one class of staleness that costs
+ * QA real time, so it gets its own section.
+ *
+ * @param {string[]} L
+ * @param {object} map
+ * @param {object} changes
+ */
+function appendStaleMarkers(L, map, changes) {
+  const markers = map.staleMarkers || [];
+  if (!markers.length) return;
+
+  const terms = new Set();
+  for (const file of changes.files) {
+    for (const intent of file.intents || []) {
+      if (intent.action === 'removed' || !SURFACE_KINDS.has(intent.kind)) continue;
+      const source = intent.kind === 'api-param' ? intent.value.split(' ')[0] : intent.value;
+      String(source)
+        .split(/[^A-Za-z]+/)
+        .forEach((w) => {
+          const term = w.toLowerCase();
+          if (term.length >= 5 && !TERM_STOPLIST.has(term)) terms.add(term);
+        });
+    }
+  }
+  if (!terms.size) return;
+
+  const changedPaths = new Set(changes.files.map((f) => f.path));
+  const suspect = markers
+    .filter((m) => !changedPaths.has(m.file))
+    .map((m) => ({ ...m, hit: [...terms].find((t) => m.text.toLowerCase().includes(t)) }))
+    .filter((m) => m.hit)
+    .slice(0, 12);
+  if (!suspect.length) return;
+
+  L.push('## ⚠️ Notes this change may have turned into lies');
+  L.push('');
+  L.push(
+    'These files were **not** changed, but each contains a note saying something does not exist ' +
+      'that this branch appears to have built. A stub like this keeps passing — no test run will catch it. ' +
+      'Confirm against the diff, then fix or delete:'
+  );
+  L.push('');
+  for (const m of suspect) {
+    L.push(`- \`${m.file}:${m.line}\` — "${m.text}" _(mentions **${m.hit}**)_`);
+  }
+  L.push('');
 }
 
 /**
@@ -759,4 +1114,4 @@ function main() {
 
 if (require.main === module) main();
 
-module.exports = { propagate, score, checklistFor, e2eForFeature, render };
+module.exports = { propagate, score, checklistFor, e2eForFeature, render, plainLines, locationOf, attributeIntents };
