@@ -19,13 +19,41 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 const { OUT_DIR, rel, rangesOverlap, readArtifact, writeArtifact } = require('./lib');
 
+/**
+ * Configuration files carry no requirement citation and no importer, so the
+ * requirement join can never reach them. Their impact is known up front —
+ * state it explicitly rather than reporting "no feature impact".
+ */
+// Ordered most specific first — the first pattern that matches wins.
+const CONFIG_IMPACT = [
+  [/(^|\/)package-lock\.json$/, 'Locked dependency versions moved. Diff the lockfile for major bumps, then reinstall and run the full suite for that package.'],
+  [/(^|\/)package\.json$/, 'Dependency or script change. Reinstall (`npm ci`) and run the full suite for that package — a transitive bump can change runtime behaviour with no source diff.'],
+  [/(^|\/)Dockerfile$/, 'Image build changed. Rebuild and smoke-test the containerised stack (F-14).'],
+  [/(^|\/)nginx\.conf$/, 'Reverse-proxy routing changed. Verify the client reaches `/api/**` without CORS errors in Docker (F-14).'],
+  [/(^|\/)\.env/, 'Environment values changed. Check ports and CORS_ORIGIN — this repo already has three conflicting client ports (3000 / 5173 / 9000).'],
+  [/(^|\/)playwright\.config\.js$/, 'E2E harness changed (baseURL, timeouts, projects). Re-run the whole Playwright suite; a green run before this change proves nothing about after.'],
+  [/(^|\/)jest\.config\.js$/, 'Unit-test harness changed (coverage thresholds, roots, setup files). Re-run the affected package suite with coverage.'],
+  [/(^|\/)tailwind\.config\.js$/, 'Design tokens or content globs changed. Visually check every screen; a wrong content glob silently drops classes from the build.'],
+  [/^docker\//, 'Container image, compose topology or seed data changed. Verify F-14: `./docker-run.ps1`, then the health endpoint and the client through the reverse proxy.'],
+];
+
+/**
+ * Describe the QA implication of a changed configuration file.
+ * @param {string} p
+ * @returns {string|null}
+ */
+function configImpact(p) {
+  const match = CONFIG_IMPACT.find(([re]) => re.test(p));
+  return match ? match[1] : 'Configuration change with no catalogued impact — inspect the diff and decide by hand.';
+}
+
 /** Files whose behaviour every authenticated request depends on. */
 const AUTH_FILES = ['server/middleware/auth.js', 'client/src/contexts/AuthContext.js', 'client/src/components/ProtectedRoute.js'];
 
 /** How far to walk the reverse-import graph when computing blast radius. */
 const BLAST_DEPTH = 2;
 
-const WEIGHT = { direct: 3, likely: 2, indirect: 1 };
+const WEIGHT = { direct: 3, likely: 2, indirect: 1, annotation: 0.5 };
 
 /** Most manual acceptance criteria to list per feature before linking out. */
 const MANUAL_CAP = 8;
@@ -76,6 +104,7 @@ function propagate(map, changes) {
         direct: new Set(),
         likely: new Set(),
         indirect: new Set(),
+        annotation: new Set(),
         reasons: [],
         frs: new Set(),
         files: new Set(),
@@ -93,9 +122,18 @@ function propagate(map, changes) {
     for (const fr of entry.frs) {
       const h = hit(fr.featureId);
       h.files.add(change.path);
+      h.frs.add(fr.frId);
+
+      // A hunk containing only comments cannot change behaviour, however many
+      // requirements the file carries. It gets its own bucket, not a direct hit.
+      if (change.commentOnly) {
+        h.annotation.add(change.path);
+        note(h, `${fr.frId} lives in \`${change.path}\`, changed by comments/annotations only`);
+        continue;
+      }
+
       const overlaps = change.status === 'A' || rangesOverlap(change.ranges, fr.ranges);
       (overlaps ? h.direct : h.likely).add(change.path);
-      h.frs.add(fr.frId);
       note(h, overlaps
         ? `${fr.frId} is implemented in the changed lines of \`${change.path}\``
         : `${fr.frId} lives in \`${change.path}\` (changed elsewhere in the file)`);
@@ -111,6 +149,8 @@ function propagate(map, changes) {
   // --- Rule 3: reverse-import blast radius ---------------------------------
   const blast = {};
   for (const change of changedRuntime) {
+    // Comments do not propagate: importers see the same exports as before.
+    if (change.commentOnly) continue;
     const seen = new Set([change.path]);
     let frontier = [change.path];
     const reached = [];
@@ -144,14 +184,15 @@ function propagate(map, changes) {
   // --- Rules 4-6: API surface ----------------------------------------------
   /** @type {Map<string, object>} */
   const endpointHits = new Map();
-  const flagEndpoint = (endpoint, why, directly) => {
+  const flagEndpoint = (endpoint, why, directly, annotationOnly = false) => {
     const existing = endpointHits.get(endpoint.key);
     if (existing) {
       existing.directlyChanged = existing.directlyChanged || directly;
+      existing.annotationOnly = existing.annotationOnly && annotationOnly;
       if (!existing.why.includes(why)) existing.why.push(why);
       return existing;
     }
-    const record = { ...endpoint, why: [why], directlyChanged: directly };
+    const record = { ...endpoint, why: [why], directlyChanged: directly, annotationOnly };
     endpointHits.set(endpoint.key, record);
     return record;
   };
@@ -163,10 +204,16 @@ function propagate(map, changes) {
     if (change) {
       // Rule 4: the route file itself moved.
       const inHunk = change.status === 'A' || rangesOverlap(change.ranges, [[endpoint.line, endpoint.line + 60]]);
-      flagEndpoint(endpoint, inHunk ? 'handler sits in a changed hunk' : 'declared in a changed route file', inHunk);
+      if (change.commentOnly) {
+        flagEndpoint(endpoint, 'its Swagger/JSDoc annotations changed — handler untouched', false, true);
+      } else {
+        flagEndpoint(endpoint, inHunk ? 'handler sits in a changed hunk' : 'declared in a changed route file', inHunk);
+      }
     } else {
       // Rule 5: a module the route depends on moved.
-      const deps = (map.imports[endpoint.file] || []).filter((d) => changedPaths.has(d));
+      const deps = (map.imports[endpoint.file] || []).filter(
+        (d) => changedPaths.has(d) && !byPath.get(d).commentOnly
+      );
       if (deps.length) flagEndpoint(endpoint, `depends on changed \`${deps.join('`, `')}\``, false);
     }
     // Rule 6: an authorization change reaches every guarded route.
@@ -176,7 +223,10 @@ function propagate(map, changes) {
   }
 
   // Endpoints pull in their client callers, and those callers' features.
+  // An annotation-only endpoint change reaches no caller — the wire contract
+  // it actually serves is unchanged.
   for (const endpoint of endpointHits.values()) {
+    if (endpoint.annotationOnly) continue;
     for (const consumer of endpoint.consumers || []) {
       const entry = map.fileIndex[consumer.file];
       if (!entry) continue;
@@ -202,14 +252,18 @@ function propagate(map, changes) {
 
   const consumerFiles = new Set();
   for (const endpoint of endpointHits.values()) {
+    if (endpoint.annotationOnly) continue;
     (endpoint.consumers || []).forEach((c) => consumerFiles.add(c.file));
   }
 
   for (const screen of map.screens) {
     if (!screen.file) continue;
-    if (changedPaths.has(screen.file)) flagScreen(screen, 'its page component changed');
+    const own = byPath.get(screen.file);
+    if (own && !own.commentOnly) flagScreen(screen, 'its page component changed');
     if (consumerFiles.has(screen.file)) flagScreen(screen, 'it calls an affected endpoint');
-    const importsChanged = (map.imports[screen.file] || []).some((d) => changedPaths.has(d));
+    const importsChanged = (map.imports[screen.file] || []).some(
+      (d) => changedPaths.has(d) && !byPath.get(d).commentOnly
+    );
     if (importsChanged) flagScreen(screen, 'it imports changed code');
     if (screen.protected && authTouched) flagScreen(screen, 'auth/authorization code changed and this route is role-gated');
   }
@@ -250,9 +304,13 @@ function score(hits, map, authTouched) {
     // weaker "same file, different lines" hit.
     h.direct.forEach((f) => h.likely.delete(f));
     [...h.direct, ...h.likely].forEach((f) => h.indirect.delete(f));
+    [...h.direct, ...h.likely, ...h.indirect].forEach((f) => h.annotation.delete(f));
     const files = [...h.files, ...h.indirect];
     const base =
-      WEIGHT.direct * h.direct.size + WEIGHT.likely * h.likely.size + WEIGHT.indirect * h.indirect.size;
+      WEIGHT.direct * h.direct.size +
+      WEIGHT.likely * h.likely.size +
+      WEIGHT.indirect * h.indirect.size +
+      WEIGHT.annotation * h.annotation.size;
 
     let multiplier = 1;
     const modifiers = [];
@@ -260,14 +318,23 @@ function score(hits, map, authTouched) {
     const untested = files.filter((f) => gaps.has(f));
     if (untested.length) { multiplier *= 1.5; modifiers.push(`${untested.length} affected file(s) have no automated test`); }
 
+    // Evidence made entirely of comment changes cannot justify a regression
+    // cycle, no matter how many requirements the annotated file carries.
+    const annotationOnly = !h.direct.size && !h.likely.size && !h.indirect.size && h.annotation.size > 0;
+    if (annotationOnly) modifiers.push('comment/annotation changes only — no runtime path altered');
+
     const value = Math.round(base * multiplier * 10) / 10;
-    const level = value >= 8 || (h.direct.size && authTouched) ? 'High' : value >= 3 ? 'Medium' : 'Low';
+    const level = annotationOnly
+      ? 'Low'
+      : value >= 8 || (h.direct.size && authTouched) ? 'High' : value >= 3 ? 'Medium' : 'Low';
 
     return {
       ...h,
       direct: [...h.direct],
       likely: [...h.likely],
       indirect: [...h.indirect],
+      annotation: [...h.annotation],
+      annotationOnly,
       frs: [...h.frs].sort(),
       files: [...new Set(files)].sort(),
       untested,
@@ -398,29 +465,57 @@ function render(map, changes, scored, endpointHits, screenHits, blast, authTouch
   L.push('');
 
   if (!scored.length) {
+    const configOnly = changes.files.some((f) => f.category === 'config' && f.status !== 'D');
+    const codeFiles = changes.files.filter((f) => f.category === 'code' && f.status !== 'D');
+
     L.push('## No feature impact detected');
     L.push('');
-    L.push(
-      changes.meta.totals.runtimeFiles === 0
-        ? 'No runtime source files changed on this branch. Nothing to regression-test.'
-        : 'Runtime files changed but none of them are referenced by any requirement, route, screen or importer. Review manually — this may mean the map needs a new citation in `docs/requirements.md`.'
-    );
+    if (!changes.meta.totals.runtimeFiles) {
+      L.push('No runtime source files changed on this branch. Nothing to regression-test.');
+    } else if (codeFiles.length && codeFiles.every((f) => f.commentOnly)) {
+      L.push('Every changed source file contains comment/annotation changes only. No runtime path moved.');
+    } else if (!codeFiles.length && configOnly) {
+      L.push('Only configuration changed — see the section below for what that implies.');
+    } else {
+      L.push(
+        'Source files changed but none are referenced by any requirement, route, screen or importer:'
+      );
+      L.push('');
+      codeFiles.forEach((f) => L.push(`- \`${f.path}\``));
+      L.push('');
+      L.push(
+        'Either they are genuinely inert, or `docs/requirements.md` is missing a citation for them. ' +
+          'Decide which — do not report "no impact" without checking.'
+      );
+    }
     L.push('');
+    appendConfig(L, changes);
     appendIgnored(L, changes);
     return `${L.join('\n')}\n`;
   }
 
   // 0. What actually changed
   const changedCode = changes.files.filter((f) => f.runtime && f.status !== 'D');
+  const behavioural = changedCode.filter((f) => !f.commentOnly);
+  if (changedCode.length && !behavioural.length) {
+    L.push('> 📝 **Every runtime file on this branch changed comments only.** No executable line moved.');
+    L.push('> Treat the whole change as documentation unless the diff read below says otherwise.');
+    L.push('');
+  }
   if (changedCode.length) {
     L.push('## 0. Changed source');
     L.push('');
-    L.push('| File | Δ | Lines | Declarations touched |');
-    L.push('|---|---|---|---|');
+    L.push('| File | Δ | Kind | Lines | Declarations touched |');
+    L.push('|---|---|---|---|---|');
     for (const f of changedCode) {
       const ranges = f.ranges.map(([a, b]) => (a === b ? `${a}` : `${a}-${b}`)).slice(0, 6).join(', ');
       const symbols = f.symbols.length ? f.symbols.map((s) => `\`${s}\``).join(', ') : '_—_';
-      L.push(`| \`${f.path}\` | ${f.status} +${f.added}/-${f.removed} | ${ranges || '_whole file_'} | ${symbols} |`);
+      const kind = f.commentOnly
+        ? '📝 comments only'
+        : `code (${f.codeLines} code / ${f.commentLines} comment)`;
+      L.push(
+        `| \`${f.path}\` | ${f.status} +${f.added}/-${f.removed} | ${kind} | ${ranges || '_whole file_'} | ${symbols} |`
+      );
     }
     L.push('');
   }
@@ -445,6 +540,8 @@ function render(map, changes, scored, endpointHits, screenHits, blast, authTouch
     L.push('');
   }
 
+  appendConfig(L, changes);
+
   // 2. Detail per feature
   L.push('## 2. Evidence');
   L.push('');
@@ -455,6 +552,7 @@ function render(map, changes, scored, endpointHits, screenHits, blast, authTouch
     if (entry.direct.length) L.push(`**Changed directly:** ${entry.direct.map((f) => `\`${f}\``).join(', ')}`);
     if (entry.likely.length) L.push(`**Same file, different lines:** ${entry.likely.map((f) => `\`${f}\``).join(', ')}`);
     if (entry.indirect.length) L.push(`**Reached indirectly:** ${entry.indirect.map((f) => `\`${f}\``).join(', ')}`);
+    if (entry.annotation.length) L.push(`**Comments/annotations only:** ${entry.annotation.map((f) => `\`${f}\``).join(', ')}`);
     if (entry.modifiers.length) L.push(`**Risk modifiers:** ${entry.modifiers.join('; ')}`);
     L.push('');
     entry.reasons.slice(0, 6).forEach((r) => L.push(`- ${r}`));
@@ -472,7 +570,8 @@ function render(map, changes, scored, endpointHits, screenHits, blast, authTouch
       const callers = (e.consumers || []).length
         ? [...new Set(e.consumers.map((c) => path.basename(c.file)))].join(', ')
         : '_API only_';
-      L.push(`| \`${e.key}\` | ${guards} | ${e.directlyChanged ? 'yes' : 'no'} | ${callers} | ${e.why.join('; ')} |`);
+      const changedCol = e.annotationOnly ? '📝 docs only' : e.directlyChanged ? 'yes' : 'no';
+      L.push(`| \`${e.key}\` | ${guards} | ${changedCol} | ${callers} | ${e.why.join('; ')} |`);
     }
     L.push('');
   }
@@ -585,6 +684,25 @@ function render(map, changes, scored, endpointHits, screenHits, blast, authTouch
 
   appendIgnored(L, changes);
   return `${L.join('\n')}\n`;
+}
+
+/**
+ * Append the configuration/environment section. Config changes never reach the
+ * requirement join, so their impact is stated from a catalogue instead.
+ * @param {string[]} L
+ * @param {object} changes
+ */
+function appendConfig(L, changes) {
+  const configFiles = changes.files.filter((f) => f.category === 'config' && f.status !== 'D');
+  if (!configFiles.length) return;
+  L.push('## Configuration & environment');
+  L.push('');
+  L.push('These changed outside the requirement map. Impact is inferred from the file, not from citations:');
+  L.push('');
+  for (const f of configFiles) {
+    L.push(`- \`${f.path}\` (+${f.added}/-${f.removed}) — ${configImpact(f.path)}`);
+  }
+  L.push('');
 }
 
 /**

@@ -9,7 +9,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 
 /** Repository root, resolved from .claude/skills/impact-analysis/scripts/. */
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
@@ -41,8 +41,9 @@ function classify(p) {
   if (TOOLING.test(p)) return { category: 'tooling', runtime: false };
   if (CONFIG.test(p)) return { category: 'config', runtime: true };
   if (/\.jsx?$/.test(p)) return { category: 'code', runtime: true };
-  if (/\.(md|txt)$/i.test(p) || p.startsWith('docs/')) return { category: 'docs', runtime: false };
+  // Extension wins over location: a screenshot under docs/ is still an asset.
   if (/\.(png|jpe?g|gif|svg|webp|ico)$/i.test(p)) return { category: 'asset', runtime: false };
+  if (/\.(md|txt)$/i.test(p) || p.startsWith('docs/')) return { category: 'docs', runtime: false };
   return { category: 'other', runtime: false };
 }
 
@@ -111,13 +112,21 @@ function allSourceFiles() {
 
 /**
  * Run a git command from the repository root.
- * @param {string} args
+ *
+ * Arguments are passed as an array and executed without a shell, so a ref
+ * supplied on the command line (`--base "$(rm -rf /)"`) is handled as one
+ * opaque argument rather than interpreted.
+ *
+ * @param {string[]} args argument vector, e.g. ['merge-base', ref, 'HEAD']
  * @param {{allowFail?: boolean}} [opts]
  * @returns {string} trimmed stdout, or '' when the command failed and allowFail is set
  */
 function git(args, opts = {}) {
+  if (!Array.isArray(args)) {
+    throw new TypeError('git() takes an argument array, not a string');
+  }
   try {
-    return execSync(`git ${args}`, {
+    return execFileSync('git', args, {
       cwd: REPO_ROOT,
       encoding: 'utf8',
       maxBuffer: 64 * 1024 * 1024,
@@ -127,6 +136,23 @@ function git(args, opts = {}) {
     if (opts.allowFail) return '';
     throw err;
   }
+}
+
+/**
+ * A line that carries no executable meaning: blank, or the start/body/end of a
+ * line or block comment. Swagger and JSDoc blocks are entirely `*`-prefixed, so
+ * this is what separates an annotation change from a behaviour change.
+ *
+ * Known limit: a continuation line of a multi-line template literal that happens
+ * to begin with `*` is misread as a comment. Rare enough to accept; the agent's
+ * diff read catches it.
+ *
+ * @param {string} line raw source line, without the diff +/- prefix
+ * @returns {boolean}
+ */
+function isCommentLine(line) {
+  const trimmed = line.trim();
+  return trimmed === '' || /^(\/\/|\/\*|\*\/|\*)/.test(trimmed);
 }
 
 /**
@@ -163,8 +189,9 @@ function parseRanges(raw) {
     .filter(Boolean)
     .map((chunk) => {
       const [from, to] = chunk.split('-').map((n) => parseInt(n, 10));
-      if (Number.isNaN(from)) return null;
-      return [from, Number.isNaN(to) ? from : to];
+      if (!Number.isFinite(from)) return null;
+      // A bare "288" has no second component at all — undefined, not NaN.
+      return [from, Number.isFinite(to) ? to : from];
     })
     .filter(Boolean);
 }
@@ -241,6 +268,7 @@ module.exports = {
   SCAN_DIRS,
   NON_RUNTIME,
   classify,
+  isCommentLine,
   rel,
   read,
   walk,

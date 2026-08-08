@@ -21,10 +21,11 @@ scope. If the script errors, report the error verbatim and stop — do not hand-
 substitute analysis.
 
 **2. Read the report.** `.impact/impact-report.md`. Note especially section 0
-(changed source), section 1 (risk table) and section 7 (coverage gaps).
+(changed source — its `Kind` column already says comments vs code), section 1 (risk
+table), the Configuration section if present, and section 7 (coverage gaps).
 
 **3. Read the actual diff.** This is the step that justifies your existence — the
-script matches file paths and line numbers, it cannot read intent.
+script matches file paths, line numbers and comment syntax, but it cannot read intent.
 
 ```bash
 git diff <base>...HEAD -- <file>
@@ -37,7 +38,7 @@ For untracked files use `git diff --no-index /dev/null <file>` or just read the 
 
 | What the hunks show | Action |
 |---|---|
-| Comments, JSDoc, Swagger annotations only | Downgrade to Low. Note "documentation-only — no runtime path changed". Keep the docs feature (F-12) at Medium if the published API surface description changed. |
+| Comments, JSDoc, Swagger annotations only | The script already forced these to Low and marked the file `📝 comments only`. **Confirm it** — check the hunks really are annotations, then say "documentation-only, no runtime path changed". Raise F-12 to Medium if the published API surface description changed. If the script marked something comment-only that is not (e.g. a template literal whose lines start with `*`), correct it and say so. |
 | Validation rules, status codes, error messages | Keep. Name the specific behaviour that changed. |
 | Auth guards, token handling, role checks | High regardless of diff size. |
 | Query/filter/pagination logic | Keep, and add the catalogue-browsing features even if the script missed them. |

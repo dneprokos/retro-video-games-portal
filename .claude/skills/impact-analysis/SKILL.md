@@ -28,6 +28,7 @@ Individual stages, if you need them:
 ```bash
 node .claude/skills/impact-analysis/scripts/build-map.js        # .impact/impact-map.json
 node .claude/skills/impact-analysis/scripts/collect-changes.js  # .impact/changes.json
+npm run impact:test                                             # the analyzer's own tests
 ```
 
 Everything under `.impact/` is generated and gitignored.
@@ -48,10 +49,25 @@ The requirement citations are what make this precise: a diff hunk that overlaps
 `server/models/Game.js:72-81` resolves to FR-01.5, which resolves to F-01, which
 resolves to the acceptance criteria and e2e specs that prove it.
 
+## Comment-only changes
+
+`collect-changes.js` classifies every touched line. A file whose hunks contain no
+executable line is marked `commentOnly` and is treated as an **annotation** hit:
+
+- it produces no direct or same-file requirement hit, only an `annotation` one
+- it does not propagate through the import graph or to client callers
+- any feature whose evidence is purely annotations is forced to **Low**
+- its endpoints show `📝 docs only` in section 3
+- if the whole branch is comment-only, the report opens with a banner saying so
+
+That covers the common Swagger/JSDoc-documentation branch automatically. It does not
+replace reading the diff — a `commentOnly` verdict is a strong hint, not proof.
+
 ## Your job after the script runs
 
-**The script cannot read intent.** It knows `server/routes/auth.js` changed; it does
-not know whether that was a Swagger comment block or the token expiry check. Always:
+**The script cannot read intent.** It knows `server/routes/auth.js` changed and whether
+the hunks were comments; it does not know whether a changed validation rule is a
+tightening or a loosening. Always:
 
 1. Read `.impact/impact-report.md`, section **0. Changed source** — that lists each
    changed file with its hunk ranges and the declarations touched.
@@ -72,8 +88,9 @@ coverage gaps. Do not paste the whole report — point at the file.
 
 | Section | Use |
 |---|---|
-| 0. Changed source | what to `git diff` before trusting anything below |
+| 0. Changed source | what to `git diff` before trusting anything below; `Kind` column says comments vs code |
 | 1. Affected features | the headline — hand this to QA |
+| Configuration & environment | config files the requirement map cannot reach, with their known implications |
 | 2. Evidence | why each feature was flagged, per requirement ID |
 | 3. API surface | endpoints to re-test, with their guards and callers |
 | 4. Screens | user-visible URLs and the role needed to reach them |
@@ -84,11 +101,18 @@ coverage gaps. Do not paste the whole report — point at the file.
 
 ## Scoring
 
-`3×direct + 2×same-file + 1×indirect`, then `×2` if authorization code changed and
-`×1.5` if affected files have no test. High ≥ 8, Medium ≥ 3, else Low. A direct hit
-combined with an auth change is always High.
+`3×direct + 2×same-file + 1×indirect + 0.5×annotation`, then `×2` if authorization code
+changed and `×1.5` if affected files have no test. High ≥ 8, Medium ≥ 3, else Low.
+A direct hit combined with an auth change is always High; annotation-only evidence is
+always Low.
 
 Full rule table: `references/report-template.md`.
+
+## Tests
+
+`npm run impact:test` — 25 tests on the Node built-in runner, no dependency. They run
+against synthetic map/diff fixtures rather than the live repo, so they stay valid as
+the application changes. Add a case whenever you touch a propagation rule.
 
 ## Troubleshooting
 

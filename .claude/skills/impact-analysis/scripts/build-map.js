@@ -471,8 +471,8 @@ function main() {
   const map = {
     meta: {
       generatedAt: new Date().toISOString(),
-      branch: git('rev-parse --abbrev-ref HEAD', { allowFail: true }),
-      sha: git('rev-parse --short HEAD', { allowFail: true }),
+      branch: git(['rev-parse', '--abbrev-ref', 'HEAD'], { allowFail: true }),
+      sha: git(['rev-parse', '--short', 'HEAD'], { allowFail: true }),
       sourceFiles: files.length,
       counts: {
         ...requirements.counts,

@@ -19,7 +19,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { REPO_ROOT, classify, git, writeArtifact, rel } = require('./lib');
+const { REPO_ROOT, classify, isCommentLine, git, writeArtifact, rel } = require('./lib');
 
 /** Declaration forms worth naming when a hunk lands inside one. */
 const SYMBOL_RE = /^\s*(?:(?:async\s+)?function\s+(\w+)|(?:const|let|var)\s+(\w+)\s*=|(?:module\.)?exports\.(\w+)\s*=|router\.(get|post|put|patch|delete)\(\s*['"]([^'"]*)['"]|(\w+)\s*:\s*(?:async\s*)?(?:function|\()|(?:async\s+)?(\w+)\s*\([^)]*\)\s*\{)/;
@@ -30,14 +30,16 @@ const SYMBOL_RE = /^\s*(?:(?:async\s+)?function\s+(\w+)|(?:const|let|var)\s+(\w+
  * @returns {{ref: string, base: string, label: string}}
  */
 function resolveBase(requested) {
-  const candidates = requested ? [requested] : ['main', 'origin/main', 'develop', 'origin/develop'];
+  const candidates = requested
+    ? [requested]
+    : ['main', 'origin/main', 'develop', 'origin/develop', 'master', 'origin/master'];
   for (const ref of candidates) {
-    if (!git(`rev-parse --verify --quiet ${ref}`, { allowFail: true })) continue;
-    const base = git(`merge-base ${ref} HEAD`, { allowFail: true });
+    if (!git(['rev-parse', '--verify', '--quiet', ref], { allowFail: true })) continue;
+    const base = git(['merge-base', ref, 'HEAD'], { allowFail: true });
     if (base) return { ref, base, label: `${ref} (merge-base ${base.slice(0, 7)})` };
   }
-  const head = git('rev-parse HEAD~1', { allowFail: true }) || git('rev-parse HEAD', { allowFail: true });
-  return { ref: 'HEAD~1', base: head, label: 'HEAD~1 (no main branch found)' };
+  const head = git(['rev-parse', 'HEAD~1'], { allowFail: true }) || git(['rev-parse', 'HEAD'], { allowFail: true });
+  return { ref: 'HEAD~1', base: head, label: 'HEAD~1 (no core branch found)' };
 }
 
 /**
@@ -64,6 +66,8 @@ function parseDiff(raw, origin) {
         removed: 0,
         ranges: [],
         binary: false,
+        codeLines: 0,
+        commentLines: 0,
       };
       files.set(p, current);
       continue;
@@ -86,6 +90,13 @@ function parseDiff(raw, origin) {
         if (count === 0) current.ranges.push([Math.max(1, start), Math.max(1, start)]);
         else current.ranges.push([start, start + count - 1]);
       }
+    } else if (/^[+-]/.test(line) && !/^(\+\+\+|---)/.test(line)) {
+      // Body of a hunk. Classifying every touched line is what lets the report
+      // tell a Swagger/JSDoc block apart from a logic change.
+      const content = line.slice(1);
+      if (content.trim() === '') continue;
+      if (isCommentLine(content)) current.commentLines += 1;
+      else current.codeLines += 1;
     }
   }
   return files;
@@ -105,6 +116,8 @@ function merge(into, from) {
     }
     existing.added += record.added;
     existing.removed += record.removed;
+    existing.codeLines += record.codeLines || 0;
+    existing.commentLines += record.commentLines || 0;
     existing.ranges.push(...record.ranges);
     existing.binary = existing.binary || record.binary;
     if (existing.status === 'M' && record.status !== 'M') existing.status = record.status;
@@ -171,33 +184,37 @@ function main() {
   const files = new Map();
 
   if (!stagedOnly && base.base) {
-    merge(files, parseDiff(git(`diff --unified=0 --no-color ${base.base}...HEAD`, { allowFail: true }), 'committed'));
+    const range = `${base.base}...HEAD`;
+    merge(files, parseDiff(git(['diff', '--unified=0', '--no-color', range], { allowFail: true }), 'committed'));
   }
   if (!committedOnly) {
-    merge(files, parseDiff(git('diff --unified=0 --no-color --cached', { allowFail: true }), 'staged'));
+    merge(files, parseDiff(git(['diff', '--unified=0', '--no-color', '--cached'], { allowFail: true }), 'staged'));
     if (!stagedOnly) {
-      merge(files, parseDiff(git('diff --unified=0 --no-color', { allowFail: true }), 'working'));
+      merge(files, parseDiff(git(['diff', '--unified=0', '--no-color'], { allowFail: true }), 'working'));
 
-      const untracked = git('ls-files --others --exclude-standard', { allowFail: true })
+      const untracked = git(['ls-files', '--others', '--exclude-standard'], { allowFail: true })
         .split(/\r?\n/)
         .filter(Boolean);
       for (const p of untracked) {
         if (files.has(p)) continue;
-        let lineCount = 0;
+        let lines = [];
         try {
-          lineCount = fs.readFileSync(path.join(REPO_ROOT, p), 'utf8').split(/\r?\n/).length;
+          lines = fs.readFileSync(path.join(REPO_ROOT, p), 'utf8').split(/\r?\n/);
         } catch (err) {
-          lineCount = 0;
+          lines = [];
         }
+        const nonBlank = lines.filter((l) => l.trim() !== '');
         files.set(p, {
           path: p,
           previousPath: null,
           status: 'A',
           origin: 'untracked',
-          added: lineCount,
+          added: lines.length,
           removed: 0,
-          ranges: lineCount ? [[1, lineCount]] : [],
+          ranges: lines.length ? [[1, lines.length]] : [],
           binary: false,
+          commentLines: nonBlank.filter(isCommentLine).length,
+          codeLines: nonBlank.filter((l) => !isCommentLine(l)).length,
         });
       }
     }
@@ -210,6 +227,9 @@ function main() {
       const { category, runtime } = classify(r.path);
       r.category = category;
       r.runtime = runtime && !r.binary;
+      // Only meaningful for JS: a .json config has no comment syntax to detect.
+      r.commentOnly =
+        category === 'code' && r.status !== 'D' && r.commentLines > 0 && r.codeLines === 0;
       return r;
     })
     .sort((a, b) => a.path.localeCompare(b.path));
@@ -217,8 +237,8 @@ function main() {
   const payload = {
     meta: {
       generatedAt: new Date().toISOString(),
-      branch: git('rev-parse --abbrev-ref HEAD', { allowFail: true }),
-      head: git('rev-parse --short HEAD', { allowFail: true }),
+      branch: git(['rev-parse', '--abbrev-ref', 'HEAD'], { allowFail: true }),
+      head: git(['rev-parse', '--short', 'HEAD'], { allowFail: true }),
       baseRef: base.ref,
       baseSha: base.base ? base.base.slice(0, 7) : null,
       baseLabel: base.label,
@@ -226,6 +246,8 @@ function main() {
       totals: {
         files: records.length,
         runtimeFiles: records.filter((r) => r.runtime).length,
+        commentOnlyFiles: records.filter((r) => r.commentOnly).length,
+        behaviouralFiles: records.filter((r) => r.runtime && !r.commentOnly).length,
         added: records.reduce((n, r) => n + r.added, 0),
         removed: records.reduce((n, r) => n + r.removed, 0),
         byCategory: records.reduce((acc, r) => {
@@ -243,6 +265,9 @@ function main() {
     console.log(`changes written: ${rel(out)}`);
     console.log(`  base: ${base.label} | scope: ${payload.meta.scope}`);
     console.log(`  ${t.files} files changed (${t.runtimeFiles} runtime), +${t.added}/-${t.removed}`);
+    if (t.commentOnlyFiles) {
+      console.log(`  ${t.commentOnlyFiles} of those are comment/annotation-only (${t.behaviouralFiles} behavioural)`);
+    }
   }
 }
 
