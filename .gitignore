@@ -47,3 +47,12 @@ e2e/blobs/
 e2e/trace-viewer/
 e2e/playwright-debug.log
 e2e/test-results/
+
+# Local Claude Code settings (may contain credentials) — never commit
+.claude/settings.local.json
+
+# Impact analysis artifacts (regenerated on every run)
+.impact/
+
+# playwright-cli skill scratch output
+.playwright-cli/

@@ -9,7 +9,8 @@
     "client": "cd client && npm start",
     "install-all": "npm install && cd server && npm install && cd ../client && npm install",
     "build": "cd client && npm run build",
-    "start": "cd server && npm start"
+    "start": "cd server && npm start",
+    "impact": "node .claude/skills/impact-analysis/scripts/analyze.js"
   },
   "keywords": [
     "retro",
