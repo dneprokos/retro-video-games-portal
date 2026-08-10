@@ -1,0 +1,36 @@
+# Build server, push it to GCR and deploy it to Cloud Run
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args: ['-c', 'docker pull ${_IMAGE}:${_IMAGE_TAG} || exit 0']
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--tag=${_IMAGE}:${_IMAGE_TAG}'
+      - '--cache-from=${_IMAGE}:${_IMAGE_TAG}'
+      - '.'
+    timeout: 3000s
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ 'push', '${_IMAGE}:${_IMAGE_TAG}' ]
+  # Deploy image to Cloud Run
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'retro-games-server'
+      - '--image=${_IMAGE}:${_IMAGE_TAG}'
+      - '--region=europe-west1'
+images: [ '${_IMAGE}:${_IMAGE_TAG}' ]
+substitutions:
+  _IMAGE: gcr.io/${PROJECT_ID}/server
+  _IMAGE_TAG: latest
+options:
+  dynamicSubstitutions: true
+
+# Envs to be configured:
+# - NODE_ENV=production
+# - OPENAPI_SERVER_URL=https://foobar-server.europe-west1.run.app/api
+# - CORS_ORIGIN=https://foobar-client.europe-west1.run.app/
+# - MONGODB_URI=CHANGEME-USE-FROM-MONGODB-ATLAS
+# - JWT_SECRET=CHANGEME-your-super-secret-jwt-key-change-this-in-production-foobar
+# - OWNER_EMAIL=dneprokos@gmail.com

@@ -27,8 +27,8 @@ services:
   # Express.js API Server
   server:
     build:
-      context: ..
-      dockerfile: docker/Dockerfile.server
+      context: ../server
+      tags: [ retro-games-server ]
     container_name: retro-games-server
     restart: unless-stopped
     environment:
@@ -64,8 +64,8 @@ services:
   # React Client
   client:
     build:
-      context: ..
-      dockerfile: docker/Dockerfile.client
+      context: ../client
+      tags: [ retro-games-client ]
     container_name: retro-games-client
     restart: unless-stopped
     ports:

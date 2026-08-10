@@ -46,6 +46,12 @@ app.use('/api/games', gameRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Swagger setup
+const openapiServerUrl = (process.env.OPENAPI_SERVER_URL)
+    ? process.env.OPENAPI_SERVER_URL
+    : (process.env.NODE_ENV === 'production'
+        ? `https://${process.env.WEBSITE_SITE_NAME || 'your-app'}.azurewebsites.net/api`
+        : `http://localhost:${PORT}/api`);
+
 const swaggerOptions = {
   definition: {
     openapi: '3.0.0',
@@ -54,12 +60,12 @@ const swaggerOptions = {
       version: '1.0.0',
       description: 'API documentation for the Retro Video Games Portal',
     },
-    servers: [
-      { url: process.env.NODE_ENV === 'production'
-          ? `https://${process.env.WEBSITE_SITE_NAME || 'your-app'}.azurewebsites.net/api`
-          : `http://localhost:${PORT}/api`
-      }
-    ],
+      // https://retro-games-server-664247868381.europe-west1.run.app/api-docs/
+      servers: [
+          {
+              url: openapiServerUrl,
+          }
+      ],
     components: {
       securitySchemes: {
         bearerAuth: {
@@ -99,14 +105,14 @@ app.use('*', (req, res) => {
 
 // Only start the server if this file is run directly
 if (require.main === module) {
-  // Configure mongoose for better Azure compatibility
+  // Configure mongoose for better Azure/GCR compatibility
   mongoose.set('bufferCommands', false); // Disable mongoose buffering
 
   // Start the server first, then try to connect to database
   app.listen(PORT, () => {
     console.log(`🎮 Retro Games Portal Server running on port ${PORT}`);
     console.log(`📧 Owner email: ${process.env.OWNER_EMAIL}`);
-    console.log(`📚 Swagger API Docs: https://${process.env.WEBSITE_SITE_NAME || 'your-app'}.azurewebsites.net/api-docs`);
+    console.log(`📚 Swagger API Docs: ${openapiServerUrl}`);
 
     // Try to connect to MongoDB (non-blocking)
     if (process.env.MONGODB_URI) {
@@ -119,6 +125,7 @@ if (require.main === module) {
       })
       .catch((err) => {
         console.error('❌ MongoDB connection error:', err.message);
+        console.error('❌ MongoDB connection error (cause):', err.cause);
         console.log('⚠️  App running without database connection');
       });
     } else {
