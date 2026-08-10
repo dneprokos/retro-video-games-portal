@@ -7,10 +7,190 @@ const router = express.Router();
 
 /**
  * @swagger
+ * components:
+ *   schemas:
+ *     GameUserRef:
+ *       type: object
+ *       description: Populated user reference (only the email is projected)
+ *       properties:
+ *         _id:
+ *           type: string
+ *         email:
+ *           type: string
+ *           format: email
+ *     Game:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *         name:
+ *           type: string
+ *           minLength: 2
+ *         genre:
+ *           type: string
+ *           enum: [Action, Adventure, RPG, Strategy, Simulation, Sports, Racing, Puzzle, Platformer, Shooter, Fighting, Arcade, Educational, Other]
+ *         platforms:
+ *           type: array
+ *           items:
+ *             type: string
+ *             enum: [NES, SNES, N64, GameCube, Wii, Game Boy, Game Boy Color, Game Boy Advance, DS, 3DS, Sega Genesis, Sega Saturn, Sega Dreamcast, PlayStation, PlayStation 2, PlayStation 3, PSP, Xbox, Xbox 360, PC, Arcade, Atari 2600, Atari 7800, Commodore 64, Amiga, Other]
+ *         releaseDate:
+ *           type: string
+ *           format: date-time
+ *         hasMultiplayer:
+ *           type: boolean
+ *         description:
+ *           type: string
+ *           maxLength: 500
+ *         imageUrl:
+ *           type: string
+ *           format: uri
+ *         rating:
+ *           type: number
+ *           minimum: 0
+ *           maximum: 10
+ *           nullable: true
+ *         createdBy:
+ *           $ref: '#/components/schemas/GameUserRef'
+ *         updatedBy:
+ *           $ref: '#/components/schemas/GameUserRef'
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *     GameInput:
+ *       type: object
+ *       properties:
+ *         name:
+ *           type: string
+ *           minLength: 2
+ *         genre:
+ *           type: string
+ *           enum: [Action, Adventure, RPG, Strategy, Simulation, Sports, Racing, Puzzle, Platformer, Shooter, Fighting, Arcade, Educational, Other]
+ *         platforms:
+ *           type: array
+ *           minItems: 1
+ *           items:
+ *             type: string
+ *             enum: [NES, SNES, N64, GameCube, Wii, Game Boy, Game Boy Color, Game Boy Advance, DS, 3DS, Sega Genesis, Sega Saturn, Sega Dreamcast, PlayStation, PlayStation 2, PlayStation 3, PSP, Xbox, Xbox 360, PC, Arcade, Atari 2600, Atari 7800, Commodore 64, Amiga, Other]
+ *         releaseDate:
+ *           type: string
+ *           format: date
+ *           description: ISO 8601 date. Must not be in the future.
+ *         hasMultiplayer:
+ *           type: boolean
+ *         description:
+ *           type: string
+ *           maxLength: 500
+ *         imageUrl:
+ *           type: string
+ *           format: uri
+ *         rating:
+ *           type: number
+ *           minimum: 0
+ *           maximum: 10
+ *     Pagination:
+ *       type: object
+ *       properties:
+ *         currentPage:
+ *           type: integer
+ *         totalPages:
+ *           type: integer
+ *         totalGames:
+ *           type: integer
+ *         hasNextPage:
+ *           type: boolean
+ *         hasPrevPage:
+ *           type: boolean
+ *     GameListResponse:
+ *       type: object
+ *       properties:
+ *         games:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/Game'
+ *         pagination:
+ *           $ref: '#/components/schemas/Pagination'
+ *     GameResponse:
+ *       type: object
+ *       properties:
+ *         game:
+ *           $ref: '#/components/schemas/Game'
+ *     GameMutationResponse:
+ *       type: object
+ *       properties:
+ *         message:
+ *           type: string
+ *           example: Game created successfully
+ *         game:
+ *           $ref: '#/components/schemas/Game'
+ *     MessageResponse:
+ *       type: object
+ *       properties:
+ *         message:
+ *           type: string
+ *           example: Game deleted successfully
+ *     FilterOptionsResponse:
+ *       type: object
+ *       properties:
+ *         genres:
+ *           type: array
+ *           items:
+ *             type: string
+ *         platforms:
+ *           type: array
+ *           items:
+ *             type: string
+ *         yearRange:
+ *           type: object
+ *           properties:
+ *             min:
+ *               type: integer
+ *             max:
+ *               type: integer
+ *     ErrorResponse:
+ *       type: object
+ *       properties:
+ *         message:
+ *           type: string
+ *           description: Human-readable error message
+ *           example: Server error
+ *     ValidationErrorResponse:
+ *       type: object
+ *       properties:
+ *         message:
+ *           type: string
+ *           example: Validation error
+ *         errors:
+ *           type: array
+ *           description: express-validator failures (absent on single-message business rule errors)
+ *           items:
+ *             type: object
+ *             properties:
+ *               type:
+ *                 type: string
+ *                 example: field
+ *               value: {}
+ *               msg:
+ *                 type: string
+ *                 example: Invalid genre
+ *               path:
+ *                 type: string
+ *                 example: genre
+ *               location:
+ *                 type: string
+ *                 example: body
+ */
+
+/**
+ * @swagger
  * /games:
  *   get:
  *     summary: Get all games with search and filters
  *     tags: [Games]
+ *     security: []
  *     parameters:
  *       - in: query
  *         name: search
@@ -37,9 +217,40 @@ const router = express.Router();
  *         schema:
  *           type: boolean
  *         description: Filter by multiplayer support
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 1000
+ *           default: 12
+ *         description: Page size
  *     responses:
  *       200:
  *         description: List of games
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/GameListResponse'
+ *       400:
+ *         description: Validation error on query parameters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationErrorResponse'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 // @route   GET /api/games
 // @desc    Get all games with search and filters
@@ -147,6 +358,7 @@ router.get('/', [
  *   get:
  *     summary: Get a single game by ID
  *     tags: [Games]
+ *     security: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -157,8 +369,24 @@ router.get('/', [
  *     responses:
  *       200:
  *         description: Game details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/GameResponse'
  *       404:
- *         description: Game not found
+ *         description: Game not found (also returned for a malformed ObjectId)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               message: Game not found
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 // @route   GET /api/games/:id
 // @desc    Get single game by ID
@@ -196,32 +424,56 @@ router.get('/:id', async (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *               genre:
- *                 type: string
- *               platforms:
- *                 type: array
- *                 items:
- *                   type: string
- *               releaseDate:
- *                 type: string
- *                 format: date
- *               hasMultiplayer:
- *                 type: boolean
- *               description:
- *                 type: string
- *               imageUrl:
- *                 type: string
- *               rating:
- *                 type: number
+ *             allOf:
+ *               - $ref: '#/components/schemas/GameInput'
+ *               - required: [name, genre, platforms, releaseDate, hasMultiplayer]
  *     responses:
  *       201:
  *         description: Game created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/GameMutationResponse'
  *       400:
- *         description: Validation error
+ *         description: Validation error, duplicate game name, or future release date
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationErrorResponse'
+ *             examples:
+ *               validation:
+ *                 value:
+ *                   message: Validation error
+ *                   errors:
+ *                     - type: field
+ *                       value: Bogus
+ *                       msg: Invalid genre
+ *                       path: genre
+ *                       location: body
+ *               duplicateName:
+ *                 value:
+ *                   message: Game with this name already exists.
+ *               futureReleaseDate:
+ *                 value:
+ *                   message: Release date cannot be in the future.
+ *       401:
+ *         description: Missing or invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Admin or Owner role required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 // @route   POST /api/games
 // @desc    Create new game
@@ -320,17 +572,68 @@ router.post('/', [
  *         description: The game ID
  *     requestBody:
  *       required: true
+ *       description: Partial update — every field is optional, but the body itself must be present.
  *       content:
  *         application/json:
  *           schema:
- *             type: object
+ *             $ref: '#/components/schemas/GameInput'
  *     responses:
  *       200:
  *         description: Game updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/GameMutationResponse'
+ *             example:
+ *               message: Game updated successfully
  *       400:
- *         description: Validation error
+ *         description: Validation error, duplicate game name, or future release date
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationErrorResponse'
+ *             examples:
+ *               validation:
+ *                 value:
+ *                   message: Validation error
+ *                   errors:
+ *                     - type: field
+ *                       value: X
+ *                       msg: Game name must be at least 2 characters long
+ *                       path: name
+ *                       location: body
+ *               duplicateName:
+ *                 value:
+ *                   message: Game with this name already exists.
+ *               futureReleaseDate:
+ *                 value:
+ *                   message: Release date cannot be in the future.
+ *       401:
+ *         description: Missing or invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Admin or Owner role required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Game not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               message: Game not found
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 // @route   PUT /api/games/:id
 // @desc    Update game
@@ -418,8 +721,38 @@ router.put('/:id', [
  *     responses:
  *       200:
  *         description: Game deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/MessageResponse'
+ *             example:
+ *               message: Game deleted successfully
+ *       401:
+ *         description: Missing or invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Admin or Owner role required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Game not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               message: Game not found
+ *       500:
+ *         description: Server error (includes a malformed ObjectId)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 // @route   DELETE /api/games/:id
 // @desc    Delete game
@@ -446,9 +779,20 @@ router.delete('/:id', [authenticateToken, requireAdmin], async (req, res) => {
  *   get:
  *     summary: Get filter options (genres, platforms, year range)
  *     tags: [Games]
+ *     security: []
  *     responses:
  *       200:
  *         description: Filter options
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/FilterOptionsResponse'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 // @route   GET /api/games/filters/options
 // @desc    Get filter options (genres, platforms, year range)
