@@ -54,5 +54,14 @@ e2e/test-results/
 # Impact analysis artifacts (regenerated on every run)
 .impact/
 
+# Static defect scan artifacts (regenerated on every run)
+.static-scan/
+
+# Jira bug drafts (regenerated on every run)
+.jira-bug/
+
+# Bug leakage export, metrics and dashboard (regenerated on every run)
+.bug-leakage/
+
 # playwright-cli skill scratch output
 .playwright-cli/
