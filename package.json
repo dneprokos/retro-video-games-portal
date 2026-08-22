@@ -11,7 +11,14 @@
     "build": "cd client && npm run build",
     "start": "cd server && npm start",
     "impact": "node .claude/skills/impact-analysis/scripts/analyze.js",
-    "impact:test": "node --test .claude/skills/impact-analysis/scripts/impact.test.js"
+    "impact:test": "node --test .claude/skills/impact-analysis/scripts/impact.test.js",
+    "scan": "node .claude/skills/static-defect-scan/scripts/scan.js",
+    "scan:test": "node --test .claude/skills/static-defect-scan/scripts/scan.test.js",
+    "bug": "node .claude/skills/jira-bug-creator/scripts/draft-bug.js",
+    "bug:test": "node --test .claude/skills/jira-bug-creator/scripts/bug.test.js",
+    "leakage": "node .claude/skills/jira-metrics-bug-leakage/scripts/leakage.js",
+    "leakage:dashboard": "node .claude/skills/jira-metrics-bug-leakage/scripts/build-dashboard.js",
+    "leakage:test": "node --test .claude/skills/jira-metrics-bug-leakage/scripts/leakage.test.js"
   },
   "keywords": [
     "retro",
