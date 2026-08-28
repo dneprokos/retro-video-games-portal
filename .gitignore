@@ -65,3 +65,4 @@ e2e/test-results/
 
 # playwright-cli skill scratch output
 .playwright-cli/
+e2e/video-output/

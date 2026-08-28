@@ -4,6 +4,20 @@ This guide walks you through adding a new retro game to the **Retro Games Portal
 
 > **Who can do this?** Only users with the **Admin** or **Owner** role can add games. Guests can only browse. In this guide we use the **Owner** account (`**********`).
 
+## Video walkthrough
+
+The whole flow recorded end to end (1280×720, captioned): [`videos/add-new-game.webm`](videos/add-new-game.webm)
+
+Re-record it against a running app:
+
+```bash
+cd e2e
+BASE_URL=http://localhost:9000 npx playwright test --config=playwright.video.config.js
+# output: e2e/video-output/<test-name>/video.webm
+```
+
+The script (`e2e/video/add-new-game.video.spec.js`) deletes any existing copy of the demo game first, since game names must be unique.
+
 ---
 
 ## Step 1 — Open the portal
