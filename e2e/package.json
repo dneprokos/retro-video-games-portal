@@ -13,10 +13,10 @@
     "test:update-snapshots": "playwright test --update-snapshots"
   },
   "devDependencies": {
-    "@playwright/test": "^1.40.0",
+    "@playwright/test": "^1.63.0",
     "@types/node": "^20.0.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   }
-} 
+}
