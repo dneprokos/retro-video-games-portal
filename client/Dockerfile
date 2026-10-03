@@ -5,17 +5,18 @@ FROM node:18-alpine AS build
 WORKDIR /app
 
 # Copy package files
-COPY client/package*.json ./
+COPY package*.json ./
 
 # Install dependencies
 RUN npm ci
 
 # Copy client source code
-COPY client/ ./
+COPY ./ ./
 
 # Build the application
 RUN npm run build
 
+########
 # Production stage
 FROM nginx:alpine
 
@@ -23,7 +24,7 @@ FROM nginx:alpine
 COPY --from=build /app/build /usr/share/nginx/html
 
 # Copy nginx configuration
-COPY docker/nginx.conf /etc/nginx/nginx.conf
+COPY nginx.conf /etc/nginx/nginx.conf
 
 # Expose port
 EXPOSE 3000
